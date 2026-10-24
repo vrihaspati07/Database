@@ -26,14 +26,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenLogin }) => {
             <Database className="w-5 h-5 text-white" />
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold tracking-tight text-[#0F172A] font-sans">
-              Hind <span className="text-[#1E3A8A]">DB</span>
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] border border-[#1E3A8A]/20 font-mono">
-              🇮🇳 India
-            </span>
-          </div>
+          <span className="text-2xl font-bold tracking-tight text-[#0F172A] font-sans">
+            Hind <span className="text-[#1E3A8A]">DB</span>
+          </span>
         </a>
 
         {/* Center: Nav Links (Features, Pricing, Docs, Blog) */}

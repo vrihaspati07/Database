@@ -27,14 +27,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#1E3A8A] text-white shadow-md shadow-blue-950/10 group-hover:scale-105 transition-transform">
             <Database className="w-5 h-5 text-white" />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold tracking-tight text-[#0F172A] font-sans">
-              Hind <span className="text-[#1E3A8A]">DB</span>
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] border border-[#1E3A8A]/20 font-mono">
-              🇮🇳 Sovereign
-            </span>
-          </div>
+          <span className="text-2xl font-bold tracking-tight text-[#0F172A] font-sans">
+            Hind <span className="text-[#1E3A8A]">DB</span>
+          </span>
         </a>
 
         {onBackToHome && (
