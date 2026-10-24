@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # 1. Frontend Web App (React 18 + Nginx)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: hind-db-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - hind-network
+
+  # 2. Backend Engine (Node.js 18 + Express)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: hind-db-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://hind_admin:hind_secure_pass_2026@postgres:5432/hind_db_production
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: hind_admin
+      PG_PASSWORD: hind_secure_pass_2026
+      PG_DATABASE: hind_db_production
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: hind_minio_admin
+      MINIO_SECRET_KEY: hind_minio_secret_key_2026
+      MINIO_BUCKET: hind-assets-mumbai
+      JWT_SECRET: hind_db_super_secret_jwt_key_india_2026
+      SENDGRID_API_KEY: SG.hind_db_production_key_mock_2026
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hind-network
+
+  # 3. PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: hind-db-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hind_admin
+      POSTGRES_PASSWORD: hind_secure_pass_2026
+      POSTGRES_DB: hind_db_production
+      TZ: Asia/Kolkata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./server/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hind_admin -d hind_db_production"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hind-network
+
+  # 4. Redis Cache & Job Broker
+  redis:
+    image: redis:7-alpine
+    container_name: hind-db-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - hind-network
+
+  # 5. MinIO S3-Compatible Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: hind-db-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: hind_minio_admin
+      MINIO_ROOT_PASSWORD: hind_minio_secret_key_2026
+      MINIO_REGION_NAME: ap-south-1
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hind-network
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+
+networks:
+  hind-network:
+    driver: bridge

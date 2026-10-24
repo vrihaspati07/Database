@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hind-db-config
+  namespace: hind-db
+data:
+  NODE_ENV: "production"
+  PORT: "4000"
+  HIND_REGION: "ap-south-1 (Mumbai)"
+  PG_HOST: "hind-db-pg-cluster.internal.hind.io"
+  PG_PORT: "5432"
+  PG_DATABASE: "hind_db_production"
+  PG_SSL: "true"
+  PG_MAX_POOL: "30"
+  REDIS_HOST: "hind-db-redis-cluster.internal.hind.io"
+  REDIS_PORT: "6379"
+  MINIO_ENDPOINT: "storage-mumbai.hind.io"
+  MINIO_PORT: "443"
+  MINIO_USE_SSL: "true"
+  MINIO_BUCKET: "hind-assets-mumbai"
+  METRICS_ENABLED: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hind-db-secret
+  namespace: hind-db
+type: Opaque
+stringData:
+  PG_USER: "hind_admin"
+  PG_PASSWORD: "hind_secure_pass_production_2026"
+  JWT_SECRET: "hind_db_super_secret_jwt_key_india_2026"
+  REFRESH_TOKEN_SECRET: "hind_db_refresh_secret_2026"
+  MINIO_ACCESS_KEY: "hind_minio_admin"
+  MINIO_SECRET_KEY: "hind_minio_secret_key_2026"

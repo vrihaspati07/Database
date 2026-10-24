@@ -1,0 +1,37 @@
+# Hind DB - Prometheus Scrape Configuration
+# Product: Hind DB
+# Parent Company: Hind India Private Limited
+# Copyright: © 2026 Hind. A Hind India Private Limited Company.
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+  external_labels:
+    cluster: 'hind-db-mumbai-ap-south-1'
+    environment: 'production'
+
+scrape_configs:
+  # 1. Hind DB Express Backend Engine
+  - job_name: 'hind-db-api'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['app:4000', 'host.docker.internal:4000']
+        labels:
+          region: 'ap-south-1'
+          datacenter: 'mumbai-dc1'
+
+  # 2. Redis Exporter
+  - job_name: 'hind-db-redis'
+    static_configs:
+      - targets: ['redis:6379']
+
+  # 3. PostgreSQL Exporter
+  - job_name: 'hind-db-postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+
+  # 4. MinIO S3 Storage Metrics
+  - job_name: 'hind-db-minio'
+    metrics_path: '/minio/v2/metrics/cluster'
+    static_configs:
+      - targets: ['minio:9000']

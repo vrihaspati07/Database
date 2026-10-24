@@ -1,0 +1,39 @@
+# Hind DB - Prometheus Alerting Rules
+# Product: Hind DB
+# Parent Company: Hind India Private Limited
+# Copyright: © 2026 Hind. A Hind India Private Limited Company.
+
+groups:
+  - name: hind_db_alerts
+    rules:
+      # 1. High API Error Rate Alert
+      - alert: HindDbHighErrorRate
+        expr: (sum(rate(hind_db_http_requests_total{status_code=~"5.."}[2m])) / sum(rate(hind_db_http_requests_total[2m]))) * 100 > 5
+        for: 1m
+        labels:
+          severity: critical
+          region: ap-south-1
+        annotations:
+          summary: "Hind DB API HTTP 5xx error rate exceeded 5%"
+          description: "Cluster in Mumbai ap-south-1 is experiencing elevated 5xx error rates."
+
+      # 2. Elevated Query Latency Alert
+      - alert: HindDbHighQueryLatency
+        expr: histogram_quantile(0.99, sum(rate(hind_db_http_request_duration_seconds_bucket[2m])) by (le)) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          region: ap-south-1
+        annotations:
+          summary: "Hind DB API p99 latency is over 500ms"
+          description: "p99 latency is elevated on sovereign cluster."
+
+      # 3. Instance Down Alert
+      - alert: HindDbInstanceDown
+        expr: up{job="hind-db-api"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Hind DB API container instance down"
+          description: "The Hind DB API pod has stopped reporting metrics to Prometheus."

@@ -1,0 +1,104 @@
+name: Hind DB - Production CI/CD Pipeline (AWS Mumbai)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ap-south-1
+  BACKEND_ECR_REPO: hind-db-backend
+  FRONTEND_ECR_REPO: hind-db-frontend
+  EKS_CLUSTER_NAME: hind-db-cluster-mumbai
+
+jobs:
+  # 1. Continuous Integration (Tests, Lint, Build Validation)
+  test-and-validate:
+    name: Run Tests & Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Verify Types & Build Production Assets
+        run: |
+          npm run build
+
+  # 2. Continuous Deployment (Docker Multi-Build, ECR Push, EKS Rollout)
+  deploy-to-eks:
+    name: Build & Deploy to EKS (ap-south-1)
+    needs: test-and-validate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push Backend Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f Dockerfile.backend -t $ECR_REGISTRY/$BACKEND_ECR_REPO:$IMAGE_TAG -t $ECR_REGISTRY/$BACKEND_ECR_REPO:latest .
+          docker push $ECR_REGISTRY/$BACKEND_ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$BACKEND_ECR_REPO:latest
+
+      - name: Build & Push Frontend Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f Dockerfile.frontend -t $ECR_REGISTRY/$FRONTEND_ECR_REPO:$IMAGE_TAG -t $ECR_REGISTRY/$FRONTEND_ECR_REPO:latest .
+          docker push $ECR_REGISTRY/$FRONTEND_ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$FRONTEND_ECR_REPO:latest
+
+      - name: Update Kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      - name: Deploy Kubernetes Manifests & Rollout
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmap.yaml
+          
+          # Deploy Backend
+          kubectl apply -f k8s/backend-deployment.yaml
+          kubectl set image deployment/hind-db-backend backend=$ECR_REGISTRY/$BACKEND_ECR_REPO:$IMAGE_TAG -n hind-db
+          
+          # Deploy Frontend
+          kubectl apply -f k8s/frontend-deployment.yaml
+          kubectl set image deployment/hind-db-frontend frontend=$ECR_REGISTRY/$FRONTEND_ECR_REPO:$IMAGE_TAG -n hind-db
+          
+          # Apply Ingress & HPA
+          kubectl apply -f k8s/ingress.yaml
+          kubectl apply -f k8s/hpa.yaml
+          
+          # Wait for zero-downtime rolling update to complete
+          kubectl rollout status deployment/hind-db-backend -n hind-db --timeout=180s
+          kubectl rollout status deployment/hind-db-frontend -n hind-db --timeout=180s
