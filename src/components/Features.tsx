@@ -47,7 +47,7 @@ export const Features: React.FC = () => {
     },
     {
       name: 'File Storage (S3-compatible)',
-      description: 'High-speed object storage hosted directly in Mumbai and Bengaluru with automatic image resizing, CDN caching, and RLS bucket permissions.',
+      description: 'High-speed object storage hosted directly on sovereign high-performance infrastructure with automatic image resizing, CDN caching, and RLS bucket permissions.',
       icon: HardDrive,
       badge: 'S3 API Compatible',
       benefit: 'Upload media and documents with zero dollar egress penalties',
@@ -136,7 +136,7 @@ export const Features: React.FC = () => {
             </div>
             <div>
               <h4 className="text-base font-bold text-[#0F172A]">Need custom enterprise extensions or high-capacity sharding?</h4>
-              <p className="text-xs text-[#475569]">Our engineering team deploys dedicated VPC clusters in Mumbai & Bengaluru within 24 hours.</p>
+              <p className="text-xs text-[#475569]">Our engineering team deploys dedicated sovereign VPC clusters within 24 hours.</p>
             </div>
           </div>
 

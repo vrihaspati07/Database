@@ -33,7 +33,7 @@ export const Stats: React.FC = () => {
     {
       value: '100%',
       label: 'Made in India',
-      description: 'Sovereign data hosting strictly within Mumbai & Bengaluru',
+      description: 'Sovereign data hosting strictly within Indian borders',
       icon: Heart,
       accent: 'text-rose-600',
       bg: 'bg-rose-50',

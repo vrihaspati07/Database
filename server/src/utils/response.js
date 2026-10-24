@@ -13,7 +13,7 @@ export const responseUtils = {
       data,
       meta: {
         timestamp: new Date().toISOString(),
-        region: 'ap-south-1 (Mumbai)',
+        region: 'ap-south-1 (Sovereign)',
         attribution: '© 2026 Hind. A Hind India Private Limited Company.',
         ...meta,
       },
@@ -30,7 +30,7 @@ export const responseUtils = {
       },
       meta: {
         timestamp: new Date().toISOString(),
-        region: 'ap-south-1 (Mumbai)',
+        region: 'ap-south-1 (Sovereign)',
         attribution: '© 2026 Hind. A Hind India Private Limited Company.',
       },
     });

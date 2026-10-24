@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS databases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    region VARCHAR(100) NOT NULL DEFAULT 'mumbai-dc-01', -- 'Mumbai', 'Bangalore', 'Delhi'
+    region VARCHAR(100) NOT NULL DEFAULT 'sovereign-dc-01', -- 'Sovereign-Zone-1', 'Sovereign-Zone-2'
     plan VARCHAR(50) NOT NULL DEFAULT 'Pro', -- 'Free', 'Pro', 'Enterprise'
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- 'ACTIVE', 'PROVISIONING', 'MAINTENANCE'
     size_bytes BIGINT NOT NULL DEFAULT 10485760, -- bytes

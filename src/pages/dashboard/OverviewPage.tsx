@@ -25,7 +25,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   onOpenInviteMember 
 }) => {
   const [databases] = useState(() => dashboardApi.getDatabases());
-  const activeDb = databases[0] || { name: 'production-ecommerce-cluster', region: 'Mumbai' };
+  const activeDb = databases[0] || { name: 'production-ecommerce-cluster', region: 'Sovereign-01' };
 
   // 10 recent activity records
   const recentActivities = [
@@ -34,7 +34,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     { id: 3, action: 'Function Deployed', detail: 'Deployed `razorpay-webhook-handler` v2.4', user: 'Priya Iyer', timestamp: '18 minutes ago', type: 'deploy' },
     { id: 4, action: 'File Uploaded', detail: '`kyc_documents/aadhaar_verify_992.pdf` (1.4 MB)', user: 'Storage Worker', timestamp: '42 minutes ago', type: 'storage' },
     { id: 5, action: 'API Key Created', detail: 'Generated `Next.js Production Anon Key`', user: 'Aarav Sharma', timestamp: '1 hour ago', type: 'security' },
-    { id: 6, action: 'Backup Completed', detail: 'Automated snapshot taken (Mumbai ap-south-1)', user: 'Hind Automated Ops', timestamp: '2 hours ago', type: 'system' },
+    { id: 6, action: 'Backup Completed', detail: 'Automated snapshot taken (ap-south-1 Sovereign)', user: 'Hind Automated Ops', timestamp: '2 hours ago', type: 'system' },
     { id: 7, action: 'RLS Policy Updated', detail: 'Enabled strict row isolation on `users` table', user: 'Vikram Malhotra', timestamp: '3 hours ago', type: 'schema' },
     { id: 8, action: 'Index Rebuilt', detail: 'GIN index optimized on `catalog_products.title`', user: 'Postgres Optimizer', timestamp: '4 hours ago', type: 'system' },
     { id: 9, action: 'Team Member Joined', detail: 'Priya Iyer accepted developer invite', user: 'Aarav Sharma', timestamp: '5 hours ago', type: 'team' },
@@ -319,7 +319,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           <div className="w-full bg-[#F1F5F9] rounded-full h-2">
             <div className="bg-emerald-600 h-2 rounded-full" style={{ width: '41.3%' }} />
           </div>
-          <p className="text-xs text-[#64748B] mt-2">NVMe PCIe Gen4 Array (Mumbai)</p>
+          <p className="text-xs text-[#64748B] mt-2">NVMe PCIe Gen4 Array (Sovereign Cloud)</p>
         </div>
       </div>
     </div>

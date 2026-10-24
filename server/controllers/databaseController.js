@@ -23,9 +23,9 @@ export async function getDatabases(req, res) {
       success: true,
       data: [
         {
-          id: 'db_mumbai_01',
+          id: 'db_sovereign_01',
           name: 'production-ecommerce-cluster',
-          region: 'Mumbai (Maharashtra)',
+          region: 'Sovereign Primary (ap-south-1)',
           plan: 'Pro',
           status: 'ACTIVE',
           size_bytes: 4294967296, // 4.2 GB
@@ -34,9 +34,9 @@ export async function getDatabases(req, res) {
           rowsCount: 489200,
         },
         {
-          id: 'db_bangalore_02',
+          id: 'db_sovereign_02',
           name: 'analytics-telemetry-engine',
-          region: 'Bangalore (Karnataka)',
+          region: 'Sovereign Secondary (ap-south-2)',
           plan: 'Enterprise',
           status: 'ACTIVE',
           size_bytes: 18253611008, // 18.2 GB
@@ -73,7 +73,7 @@ export async function createDatabase(req, res) {
     const newDb = {
       id: `db_${Date.now()}`,
       name: name.trim().toLowerCase().replace(/\s+/g, '-'),
-      region: region || 'Mumbai (Maharashtra)',
+      region: region || 'Sovereign Primary (ap-south-1)',
       plan: plan || 'Pro',
       status: 'ACTIVE',
       size_bytes: 10485760, // 10 MB initial
@@ -100,7 +100,7 @@ export async function getDatabaseById(req, res) {
     data: {
       id,
       name: 'production-ecommerce-cluster',
-      region: 'Mumbai (Maharashtra)',
+      region: 'Sovereign Primary (ap-south-1)',
       plan: 'Pro',
       status: 'ACTIVE',
       size_bytes: 4294967296,
@@ -137,7 +137,7 @@ export async function getTables(req, res) {
           { name: 'email', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
           { name: 'name', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
           { name: 'phone', type: 'VARCHAR(20)', isPrimary: false, nullable: true, default: '' },
-          { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Mumbai' },
+          { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Delhi NCR' },
           { name: 'created_at', type: 'TIMESTAMP', isPrimary: false, nullable: false, default: 'NOW()' },
         ],
       },
@@ -152,7 +152,7 @@ export async function getTables(req, res) {
           { name: 'amount_inr', type: 'INTEGER', isPrimary: false, nullable: false, default: '0' },
           { name: 'payment_method', type: 'VARCHAR(50)', isPrimary: false, nullable: false, default: 'UPI' },
           { name: 'status', type: 'VARCHAR(50)', isPrimary: false, nullable: false, default: 'DELIVERED' },
-          { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Bengaluru' },
+          { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Hyderabad' },
           { name: 'created_at', type: 'TIMESTAMP', isPrimary: false, nullable: false, default: 'NOW()' },
         ],
       },
@@ -208,8 +208,8 @@ export async function getTableData(req, res) {
         tableName: name,
         columns: ['id', 'customer_name', 'amount_inr', 'payment_method', 'status', 'city', 'created_at'],
         rows: [
-          { id: 'ord_bom_101', customer_name: 'Aarav Sharma', amount_inr: 1499, payment_method: 'UPI (PhonePe)', status: 'DELIVERED', city: 'Mumbai', created_at: '2026-09-29 18:30:10' },
-          { id: 'ord_blr_102', customer_name: 'Pooja Iyer', amount_inr: 850, payment_method: 'RuPay Card', status: 'PROCESSING', city: 'Bengaluru', created_at: '2026-09-29 18:31:42' },
+          { id: 'ord_del_101', customer_name: 'Aarav Sharma', amount_inr: 1499, payment_method: 'UPI (PhonePe)', status: 'DELIVERED', city: 'Delhi NCR', created_at: '2026-09-29 18:30:10' },
+          { id: 'ord_hyd_102', customer_name: 'Pooja Iyer', amount_inr: 850, payment_method: 'RuPay Card', status: 'PROCESSING', city: 'Hyderabad', created_at: '2026-09-29 18:31:42' },
           { id: 'ord_del_103', customer_name: 'Rohan Gupta', amount_inr: 3200, payment_method: 'NetBanking (HDFC)', status: 'CONFIRMED', city: 'Delhi NCR', created_at: '2026-09-29 18:34:05' },
           { id: 'ord_hyd_104', customer_name: 'Divya Reddy', amount_inr: 950, payment_method: 'UPI (GPay)', status: 'DELIVERED', city: 'Hyderabad', created_at: '2026-09-29 18:38:19' },
           { id: 'ord_pune_105', customer_name: 'Ananya Deshmukh', amount_inr: 2150, payment_method: 'UPI (Paytm)', status: 'IN_TRANSIT', city: 'Pune', created_at: '2026-09-29 18:41:00' },
@@ -226,8 +226,8 @@ export async function getTableData(req, res) {
       tableName: name,
       columns: ['id', 'email', 'name', 'phone', 'city', 'created_at'],
       rows: [
-        { id: 'usr_in_101', email: 'aarav.s@quickmart.in', name: 'Aarav Sharma', phone: '+91 98201 44910', city: 'Mumbai', created_at: '2026-09-28 14:10:00' },
-        { id: 'usr_in_102', email: 'pooja.iyer@finset.io', name: 'Pooja Iyer', phone: '+91 94481 22819', city: 'Bengaluru', created_at: '2026-09-28 15:20:15' },
+        { id: 'usr_in_101', email: 'aarav.s@quickmart.in', name: 'Aarav Sharma', phone: '+91 98201 44910', city: 'Delhi NCR', created_at: '2026-09-28 14:10:00' },
+        { id: 'usr_in_102', email: 'pooja.iyer@finset.io', name: 'Pooja Iyer', phone: '+91 94481 22819', city: 'Hyderabad', created_at: '2026-09-28 15:20:15' },
         { id: 'usr_in_103', email: 'rohan.g@bharatcart.in', name: 'Rohan Gupta', phone: '+91 98110 55192', city: 'Delhi NCR', created_at: '2026-09-28 16:45:30' },
         { id: 'usr_in_104', email: 'divya.reddy@hyderabad.dev', name: 'Divya Reddy', phone: '+91 99890 11223', city: 'Hyderabad', created_at: '2026-09-28 18:05:00' },
       ],
@@ -290,10 +290,10 @@ export async function executeQuery(req, res) {
   // Simulation / Real execution
   const latency = +(1.5 + Math.random() * 1.5).toFixed(2);
   const rows = [
-    { order_id: 'ord_bom_9011', customer: 'Aarav Mehta', amount: '₹1,490', payment: 'UPI / PhonePe', city: 'Mumbai', latency_ms: '1.8ms' },
-    { order_id: 'ord_blr_4412', customer: 'Pooja Iyer', amount: '₹840', payment: 'RuPay Card', city: 'Bengaluru', latency_ms: '2.1ms' },
-    { order_id: 'ord_del_7820', customer: 'Rohan Gupta', amount: '₹3,200', payment: 'NetBanking', city: 'Delhi NCR', latency_ms: '1.9ms' },
-    { order_id: 'ord_hyd_1109', customer: 'Divya Reddy', amount: '₹950', payment: 'UPI / GPay', city: 'Hyderabad', latency_ms: '2.4ms' },
+    { order_id: 'ord_in_9011', customer: 'Aarav Mehta', amount: '₹1,490', payment: 'UPI / PhonePe', city: 'Delhi NCR', latency_ms: '1.8ms' },
+    { order_id: 'ord_in_4412', customer: 'Pooja Iyer', amount: '₹840', payment: 'RuPay Card', city: 'Hyderabad', latency_ms: '2.1ms' },
+    { order_id: 'ord_in_7820', customer: 'Rohan Gupta', amount: '₹3,200', payment: 'NetBanking', city: 'Delhi NCR', latency_ms: '1.9ms' },
+    { order_id: 'ord_in_1109', customer: 'Divya Reddy', amount: '₹950', payment: 'UPI / GPay', city: 'Hyderabad', latency_ms: '2.4ms' },
   ];
 
   return res.status(200).json({
@@ -304,7 +304,7 @@ export async function executeQuery(req, res) {
       rowCount: rows.length,
       latencyMs: latency,
       executionPlan: [
-        '1. Index Scan on quick_commerce_orders (Mumbai Edge)',
+        '1. Index Scan on quick_commerce_orders (Sovereign Edge)',
         '2. Row-Level Security policy filter evaluated',
         '3. Projection and serialization emitted in 2.1ms',
       ],
@@ -321,15 +321,15 @@ export async function getStorageFiles(req, res) {
   return res.status(200).json({
     success: true,
     data: {
-      bucketName: 'production-assets-mumbai',
+      bucketName: 'production-assets-sovereign',
       totalUsageBytes: 3435973836, // 3.4 GB
       quotaBytes: 10737418240, // 10 GB
       files: [
         { id: 'f1', name: 'user_avatars', type: 'folder', path: '/user_avatars', size: 524288000, itemsCount: 1420, modified: '2026-09-29T12:00:00Z' },
         { id: 'f2', name: 'kyc_documents', type: 'folder', path: '/kyc_documents', size: 1610612736, itemsCount: 4800, modified: '2026-09-29T14:20:00Z' },
-        { id: 'f3', name: 'product_catalog_2026.pdf', type: 'file', path: '/product_catalog_2026.pdf', size: 4820000, mime: 'application/pdf', modified: '2026-09-28T09:15:00Z', publicUrl: 'https://storage-mumbai.hind.io/production-assets/product_catalog_2026.pdf' },
-        { id: 'f4', name: 'hero_database_banner.png', type: 'file', path: '/hero_database_banner.png', size: 1250000, mime: 'image/png', modified: '2026-09-27T16:30:00Z', publicUrl: 'https://storage-mumbai.hind.io/production-assets/hero_database_banner.png' },
-        { id: 'f5', name: 'gst_invoice_template.xlsx', type: 'file', path: '/gst_invoice_template.xlsx', size: 340000, mime: 'application/vnd.ms-excel', modified: '2026-09-26T11:00:00Z', publicUrl: 'https://storage-mumbai.hind.io/production-assets/gst_invoice_template.xlsx' },
+        { id: 'f3', name: 'product_catalog_2026.pdf', type: 'file', path: '/product_catalog_2026.pdf', size: 4820000, mime: 'application/pdf', modified: '2026-09-28T09:15:00Z', publicUrl: 'https://storage.hind.io/production-assets/product_catalog_2026.pdf' },
+        { id: 'f4', name: 'hero_database_banner.png', type: 'file', path: '/hero_database_banner.png', size: 1250000, mime: 'image/png', modified: '2026-09-27T16:30:00Z', publicUrl: 'https://storage.hind.io/production-assets/hero_database_banner.png' },
+        { id: 'f5', name: 'gst_invoice_template.xlsx', type: 'file', path: '/gst_invoice_template.xlsx', size: 340000, mime: 'application/vnd.ms-excel', modified: '2026-09-26T11:00:00Z', publicUrl: 'https://storage.hind.io/production-assets/gst_invoice_template.xlsx' },
       ],
     },
   });
@@ -346,12 +346,12 @@ export async function uploadFile(req, res) {
     size: size || 1048576,
     mime: mime || 'application/pdf',
     modified: new Date().toISOString(),
-    publicUrl: `https://storage-mumbai.hind.io/production-assets/${name || 'file.pdf'}`,
+    publicUrl: `https://storage.hind.io/production-assets/${name || 'file.pdf'}`,
   };
 
   return res.status(201).json({
     success: true,
-    message: 'File uploaded successfully to Mumbai S3 storage bucket!',
+    message: 'File uploaded successfully to sovereign S3 storage bucket!',
     data: newFile,
   });
 }
@@ -450,7 +450,7 @@ export async function deployFunction(req, res) {
 
   return res.status(200).json({
     success: true,
-    message: `Function ${fnId} deployed to Mumbai & Bengaluru edge in 180ms!`,
+    message: `Function ${fnId} deployed to sovereign distributed edge in 180ms!`,
     data: {
       id: fnId,
       status: 'DEPLOYED',

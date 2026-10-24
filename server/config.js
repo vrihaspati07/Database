@@ -22,8 +22,8 @@ export const config = {
 
   // JWT Security Tokens
   jwt: {
-    accessSecret: process.env.JWT_ACCESS_SECRET || 'hind_jwt_access_secret_sovereign_2026_mumbai_edge_key',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'hind_jwt_refresh_secret_sovereign_2026_bengaluru_edge_key',
+    accessSecret: process.env.JWT_ACCESS_SECRET || 'hind_jwt_access_secret_sovereign_2026_primary_key',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || 'hind_jwt_refresh_secret_sovereign_2026_secondary_key',
     accessExpiresIn: '15m', // 15 minutes as per specification
     refreshExpiresIn: '7d', // 7 days as per specification
   },

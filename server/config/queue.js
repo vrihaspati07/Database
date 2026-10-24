@@ -80,7 +80,7 @@ functionBuildQueue.process(async (job) => {
   const { functionId, slug, code } = job.data;
   console.log(`[Background Job]: Compiling & optimizing V8 bundle for function '${slug}'...`);
   await new Promise((r) => setTimeout(r, 800));
-  return { status: 'DEPLOYED_TO_EDGE', distribution: ['Mumbai-1', 'Bangalore-2', 'Delhi-1'] };
+  return { status: 'DEPLOYED_TO_EDGE', distribution: ['Zone-A', 'Zone-B', 'Zone-C'] };
 });
 
 notificationQueue.process(async (job) => {

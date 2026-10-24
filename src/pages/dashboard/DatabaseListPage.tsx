@@ -27,7 +27,7 @@ export const DatabaseListPage: React.FC<DatabaseListPageProps> = ({
   const [databases, setDatabases] = useState<DatabaseItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
-  const [region, setRegion] = useState('Mumbai (Maharashtra)');
+  const [region, setRegion] = useState('Sovereign Primary (ap-south-1)');
   const [plan, setPlan] = useState<'Free' | 'Pro' | 'Enterprise'>('Pro');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -265,9 +265,9 @@ export const DatabaseListPage: React.FC<DatabaseListPageProps> = ({
                   onChange={(e) => setRegion(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-[#CBD5E1] focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent outline-none text-sm font-medium bg-white"
                 >
-                  <option value="Mumbai (Maharashtra)">Mumbai (ap-south-1) - Lowest Latency across Western India</option>
-                  <option value="Bangalore (Karnataka)">Bangalore (ap-south-2) - Tech Hub Low Latency</option>
-                  <option value="Delhi NCR">Delhi NCR (ap-north-1) - Government & North Corridor</option>
+                  <option value="Sovereign Primary (ap-south-1)">Sovereign Primary (ap-south-1) - High Availability Zone</option>
+                  <option value="Sovereign Secondary (ap-south-2)">Sovereign Secondary (ap-south-2) - Dual-AZ Standby</option>
+                  <option value="Sovereign North (ap-north-1)">Sovereign North (ap-north-1) - Secure Data Corridor</option>
                 </select>
               </div>
 

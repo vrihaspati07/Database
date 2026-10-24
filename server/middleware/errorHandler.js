@@ -20,7 +20,7 @@ export function errorHandler(err, req, res, next) {
     },
     meta: {
       timestamp: new Date().toISOString(),
-      cluster: 'Mumbai (ap-south-1)',
+      cluster: 'ap-south-1 (Sovereign)',
       attribution: '© 2026 Hind. A Hind India Private Limited Company.',
     },
   });

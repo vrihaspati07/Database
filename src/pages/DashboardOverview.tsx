@@ -95,7 +95,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
 
             <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-mono font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>MUMBAI CLUSTER-01 (ONLINE)</span>
+              <span>PRIMARY CLUSTER-01 (ONLINE)</span>
             </div>
           </div>
 
@@ -137,13 +137,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
           <div className="space-y-2 relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#1E3A8A] border border-blue-200 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5 text-[#F97316]" />
-              <span>Sovereign Cloud Console • Project ID: prj_mumbai_8820</span>
+              <span>Sovereign Cloud Console • Project ID: prj_sovereign_8820</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] tracking-tight font-sans">
               Welcome, {user?.name || 'Developer'}! 👋
             </h1>
             <p className="text-sm text-[#475569] max-w-2xl">
-              Your PostgreSQL 16 cluster is active in Mumbai (DC-01) with dual-AZ standby replication in Bengaluru. Sub-4ms WebSocket channels and Row-Level Security policies are active.
+              Your PostgreSQL 16 cluster is active with dual-AZ standby replication. Sub-4ms WebSocket channels and Row-Level Security policies are active.
             </p>
           </div>
 
@@ -171,7 +171,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-[#475569]">Edge Latency (Mumbai)</span>
+              <span className="text-xs font-semibold text-[#475569]">Edge Latency (Primary)</span>
               <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
                 <Activity className="w-4 h-4" />
               </div>
@@ -251,10 +251,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                 </label>
                 <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#0F172A] text-slate-100 font-mono text-xs border border-slate-800">
                   <code className="flex-1 overflow-x-auto text-emerald-400">
-                    postgresql://hind_admin:••••••••••••@mumbai-01.hind.io:6543/postgres?sslmode=require
+                    postgresql://hind_admin:••••••••••••@cluster-01.hind.io:6543/postgres?sslmode=require
                   </code>
                   <button
-                    onClick={() => handleCopy('postgresql://hind_admin:hind_live_pass_2026@mumbai-01.hind.io:6543/postgres?sslmode=require', 'uri')}
+                    onClick={() => handleCopy('postgresql://hind_admin:hind_live_pass_2026@cluster-01.hind.io:6543/postgres?sslmode=require', 'uri')}
                     className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer shrink-0"
                     title="Copy Connection String"
                   >
@@ -295,7 +295,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
               <div className="p-3.5 rounded-2xl bg-[#090E1F] text-slate-200 font-mono text-xs leading-relaxed border border-slate-800">
                 <span className="text-blue-400 font-bold">SELECT</span> id, name, city, amount_inr <br />
                 <span className="text-blue-400 font-bold">FROM</span> quick_commerce_orders <br />
-                <span className="text-blue-400 font-bold">WHERE</span> city = <span className="text-emerald-400">'Mumbai'</span> <span className="text-blue-400 font-bold">ORDER BY</span> created_at <span className="text-blue-400 font-bold">DESC LIMIT</span> 3;
+                <span className="text-blue-400 font-bold">WHERE</span> status = <span className="text-emerald-400">'DELIVERED'</span> <span className="text-blue-400 font-bold">ORDER BY</span> created_at <span className="text-blue-400 font-bold">DESC LIMIT</span> 3;
               </div>
 
               <div className="overflow-x-auto rounded-2xl border border-[#E2E8F0] text-xs font-mono">
@@ -312,13 +312,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                     <tr>
                       <td className="py-2.5 px-3 text-[#475569]">ord_in_901</td>
                       <td className="py-2.5 px-3 font-semibold text-[#0F172A]">Aarav Sharma</td>
-                      <td className="py-2.5 px-3 text-[#1E3A8A]">Mumbai</td>
+                      <td className="py-2.5 px-3 text-[#1E3A8A]">Delhi NCR</td>
                       <td className="py-2.5 px-3 text-emerald-700 font-bold">₹1,499</td>
                     </tr>
                     <tr>
                       <td className="py-2.5 px-3 text-[#475569]">ord_in_902</td>
                       <td className="py-2.5 px-3 font-semibold text-[#0F172A]">Pooja Iyer</td>
-                      <td className="py-2.5 px-3 text-[#1E3A8A]">Bengaluru</td>
+                      <td className="py-2.5 px-3 text-[#1E3A8A]">Hyderabad</td>
                       <td className="py-2.5 px-3 text-emerald-700 font-bold">₹850</td>
                     </tr>
                   </tbody>
@@ -385,7 +385,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
             <div className="p-7 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs space-y-4">
               <h3 className="text-base font-bold text-[#0F172A]">Need Support in IST?</h3>
               <p className="text-xs text-[#475569] leading-relaxed">
-                Our Indian cloud database engineering team in Bengaluru is on-call 24/7 to assist with migration, sharding, and architecture.
+                Our Indian cloud database engineering team is on-call 24/7 to assist with migration, sharding, and architecture.
               </p>
               <a
                 href="mailto:hello@hind.io"
@@ -420,7 +420,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                 <QrCode className="w-28 h-28 text-[#0F172A]" />
               </div>
               <span className="mt-3 text-[11px] font-mono text-[#475569] bg-white px-3 py-1 rounded-full border border-[#E2E8F0]">
-                SECRET: HIND-MUMBAI-2026-SOVEREIGN
+                SECRET: HIND-INDIA-2026-SOVEREIGN
               </span>
             </div>
 

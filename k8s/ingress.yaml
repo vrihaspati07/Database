@@ -12,7 +12,7 @@ metadata:
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:123456789012:certificate/hind-db-ssl-2026
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
-    alb.ingress.kubernetes.io/load-balancer-name: hind-db-mumbai-alb
+    alb.ingress.kubernetes.io/load-balancer-name: hind-db-sovereign-alb
 spec:
   rules:
     - host: hind.io

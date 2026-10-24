@@ -36,7 +36,7 @@ export const Pricing: React.FC = () => {
         '50,000 Monthly API Requests',
         '1GB File Storage Bucket',
         'Community Forum & Docs Support',
-        'Standard Mumbai Region Access'
+        'Standard Sovereign Region Access'
       ],
       btnText: 'Start Free Forever',
       btnStyle: 'btn-outline',
@@ -72,7 +72,7 @@ export const Pricing: React.FC = () => {
       features: [
         '100GB Dedicated Database Cluster',
         'Unlimited Database Rows',
-        'Isolated VPC in Mumbai & Bengaluru',
+        'Isolated Dedicated Sovereign VPC',
         '99.9% Uptime SLA Guarantee',
         'Custom pgvector & AI Acceleration',
         '100GB+ S3 File Storage Bandwidth',

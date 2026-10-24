@@ -22,7 +22,7 @@ export const ProblemStatement: React.FC<ProblemStatementProps> = ({ language = '
       tag: 'Expensive USD Invoicing',
       icon: DollarSign,
       color: 'bg-rose-500/10 text-rose-600 border border-rose-500/20',
-      founder: 'Rahul, Startup Founder (Bangalore)',
+      founder: 'Rahul, Startup Founder',
       quote: `"Foreign cloud databases charge $25-500/month (₹2,000-40,000). For an early-stage Indian startup, currency fluctuations and international credit card fees eat up 30% of seed capital."`,
       data: 'Startups waste significant runway on foreign exchange conversion fees and rigid dollar-denominated tiers.',
       solution: 'Hind DB provides managed PostgreSQL with predictable local INR pricing starting at ₹999/month with zero forex overhead.'
@@ -33,10 +33,10 @@ export const ProblemStatement: React.FC<ProblemStatementProps> = ({ language = '
       tag: 'DPDP Act Compliance Risk',
       icon: Server,
       color: 'bg-blue-500/10 text-blue-600 border border-blue-500/20',
-      founder: 'Amit, Fintech Architect (Mumbai)',
+      founder: 'Amit, Fintech Architect',
       quote: `"Offshore servers route traffic through Singapore or US-East, introducing 150ms+ latency and failing RBI & DPDP Act 2026 data localization compliance audits."`,
       data: '60% of Indian fintech and healthtech startups face data residency audit hurdles.',
-      solution: 'All Hind DB clusters are deployed exclusively in Mumbai & Bangalore data centers with full DPDP 2026 compliance.'
+      solution: 'All Hind DB clusters are deployed exclusively in sovereign Tier-4 data centers with full DPDP 2026 compliance.'
     },
     {
       id: 3,

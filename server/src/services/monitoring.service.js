@@ -66,7 +66,7 @@ export const MonitoringService = {
       uptimeSeconds: Math.floor(process.uptime()),
       memoryUsage: process.memoryUsage(),
       cpuUsage: process.cpuUsage(),
-      region: 'ap-south-1 (Mumbai)',
+      region: 'ap-south-1 (Sovereign)',
       sla: '99.999%',
       timestamp: new Date().toISOString(),
     };

@@ -45,7 +45,7 @@ export const StoragePage: React.FC = () => {
   );
 
   const handleCopyLink = (file: StorageFile) => {
-    const url = file.publicUrl || `https://storage-mumbai.hind.io/production-assets/${file.name}`;
+    const url = file.publicUrl || `https://storage.hind.io/production-assets/${file.name}`;
     navigator.clipboard.writeText(url);
     setCopiedId(file.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -91,7 +91,7 @@ export const StoragePage: React.FC = () => {
             Object Storage & S3 Buckets
           </h1>
           <p className="text-[#475569] text-sm mt-1">
-            S3-compatible ultra-fast blob storage with automatic CDN edge caching in Mumbai & Bangalore.
+            S3-compatible ultra-fast blob storage with automatic CDN edge caching.
           </p>
         </div>
 
@@ -109,7 +109,7 @@ export const StoragePage: React.FC = () => {
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2 font-bold text-[#0F172A]">
             <Server className="w-4 h-4 text-[#1E3A8A]" />
-            <span>Bucket Capacity: production-assets-mumbai</span>
+            <span>Bucket Capacity: production-assets-sovereign</span>
           </div>
           <span className="text-xs font-mono font-semibold text-[#1E3A8A]">
             {formatSize(totalUsedBytes)} of 50 GB used ({usedPercentage}%)
@@ -238,7 +238,7 @@ export const StoragePage: React.FC = () => {
             {uploading && (
               <div className="p-3 bg-blue-50 text-[#1E3A8A] rounded-xl text-xs flex items-center gap-2 font-medium">
                 <div className="w-3 h-3 rounded-full border-2 border-[#1E3A8A] border-t-transparent animate-spin" />
-                Encrypting and uploading to Mumbai S3 cluster...
+                Encrypting and uploading to sovereign S3 cluster...
               </div>
             )}
 

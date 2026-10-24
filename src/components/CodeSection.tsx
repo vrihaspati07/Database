@@ -22,9 +22,9 @@ export const CodeSection: React.FC = () => {
       command: 'npm install @hind/client',
       code: `import { createClient } from '@hind/client';
 
-// Initialize connection to Mumbai cluster
+// Initialize connection to Sovereign cluster
 const hind = createClient(
-  'https://cluster-mumbai.hind.io',
+  'https://cluster.hind.io',
   process.env.HIND_API_KEY
 );
 
@@ -32,7 +32,7 @@ const hind = createClient(
 const { data: orders, error } = await hind
   .from('orders')
   .select('id, customer_name, amount_inr, status')
-  .eq('city', 'Mumbai')
+  .eq('status', 'DELIVERED')
   .order('created_at', { ascending: false })
   .limit(3);
 
@@ -59,16 +59,16 @@ import asyncio
 async def main():
     # Connect to Sovereign Indian Cluster
     db = AsyncHindClient(
-        endpoint="https://cluster-mumbai.hind.io",
+        endpoint="https://cluster.hind.io",
         api_key=os.getenv("HIND_API_KEY")
     )
     
     # Execute query with automated connection pooling
     orders = await db.table("orders").select(
         "id, customer_name, amount_inr, status"
-    ).filter("city", "eq", "Mumbai").limit(3).execute()
+    ).filter("status", "eq", "DELIVERED").limit(3).execute()
     
-    print(f"Retrieved {len(orders)} orders via Mumbai edge")
+    print(f"Retrieved {len(orders)} orders via Sovereign edge")
 
 asyncio.run(main())`,
       result: [
@@ -79,8 +79,8 @@ asyncio.run(main())`,
     },
     curl: {
       lang: 'cURL / REST API',
-      command: 'curl -X GET "https://cluster-mumbai.hind.io/rest/v1/orders"',
-      code: `curl -X GET "https://cluster-mumbai.hind.io/rest/v1/orders?select=id,customer_name,amount_inr,status&city=eq.Mumbai&limit=3" \\
+      command: 'curl -X GET "https://cluster.hind.io/rest/v1/orders"',
+      code: `curl -X GET "https://cluster.hind.io/rest/v1/orders?select=id,customer_name,amount_inr,status&status=eq.DELIVERED&limit=3" \\
   -H "apikey: hind_live_key_9941a8" \\
   -H "Authorization: Bearer hind_live_key_9941a8" \\
   -H "Content-Type: application/json"`,

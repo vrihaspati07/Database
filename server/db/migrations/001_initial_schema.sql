@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS databases (
     id VARCHAR(100) PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    region VARCHAR(100) DEFAULT 'Mumbai (ap-south-1)',
+    region VARCHAR(100) DEFAULT 'Sovereign Primary (ap-south-1)',
     plan VARCHAR(50) DEFAULT 'Pro',
     status VARCHAR(50) DEFAULT 'ACTIVE',
     size_bytes BIGINT DEFAULT 10485760,

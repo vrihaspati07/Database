@@ -39,7 +39,7 @@ services:
       MINIO_USE_SSL: "false"
       MINIO_ACCESS_KEY: hind_minio_admin
       MINIO_SECRET_KEY: hind_minio_secret_key_2026
-      MINIO_BUCKET: hind-assets-mumbai
+      MINIO_BUCKET: hind-assets
       JWT_SECRET: hind_db_super_secret_jwt_key_india_2026
       SENDGRID_API_KEY: SG.hind_db_production_key_mock_2026
     ports:

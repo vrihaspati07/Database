@@ -11,7 +11,7 @@ export const FAQ: React.FC = () => {
     },
     {
       q: "Where are the data centers located?",
-      a: "All Hind DB clusters are hosted natively in Tier-4 data centers in Mumbai (Maharashtra) and Bengaluru (Karnataka). Your sensitive user data, backups, and media never leave Indian sovereign territory, providing sub-50ms latency across all Indian states."
+      a: "All Hind DB clusters are hosted natively in Tier-4 sovereign cloud data centers. Your sensitive user data, backups, and media never leave sovereign territory, providing sub-50ms latency across all regions."
     },
     {
       q: "How does the ₹999/month Pro plan billing work?",
@@ -116,7 +116,7 @@ export const FAQ: React.FC = () => {
         <div className="mt-14 p-8 rounded-3xl bg-white border border-[#E2E8F0] text-center shadow-xs flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="text-left">
             <h4 className="text-base font-bold text-[#0F172A]">Still have questions about Hind DB?</h4>
-            <p className="text-xs text-[#475569] mt-1">Our engineering and developer support team in Bengaluru is ready to help.</p>
+            <p className="text-xs text-[#475569] mt-1">Our dedicated engineering and developer support team is ready to help.</p>
           </div>
 
           <a

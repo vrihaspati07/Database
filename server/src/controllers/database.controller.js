@@ -32,7 +32,7 @@ export const DatabaseController = {
 
       const db = await DatabaseService.createDatabase(req.user?.userId || 'usr_default', {
         name,
-        region: region || 'Mumbai (Maharashtra)',
+        region: region || 'Sovereign Primary (ap-south-1)',
         plan: plan || 'Pro',
       });
       return responseUtils.success(res, db, 'Database cluster provisioned.', 201);

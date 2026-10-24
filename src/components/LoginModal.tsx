@@ -61,7 +61,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <h4 className="text-base font-bold text-[#0F172A]">Welcome to Hind DB!</h4>
-            <p className="text-xs text-[#475569] font-mono">Redirecting to Mumbai Cloud Console...</p>
+            <p className="text-xs text-[#475569] font-mono">Redirecting to Sovereign Cloud Console...</p>
           </div>
         ) : (
           <div>
@@ -149,7 +149,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
             <div className="mt-6 pt-4 border-t border-[#E2E8F0] flex items-center justify-center gap-2 text-[11px] font-mono text-[#475569]">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>DPDP 2026 Encrypted & Stored in Mumbai</span>
+              <span>DPDP 2026 Encrypted & Sovereign Stored</span>
             </div>
           </div>
         )}

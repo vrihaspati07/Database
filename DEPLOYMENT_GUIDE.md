@@ -2,14 +2,14 @@
 
 > **Product**: Hind DB  
 > **Company**: Hind India Private Limited  
-> **Region**: AWS Mumbai (`ap-south-1`)  
+> **Region**: AWS Sovereign Region (`ap-south-1`)  
 > **Copyright**: © 2026 Hind. A Hind India Private Limited Company.
 
 ---
 
 ## 1. Architecture Overview
 
-- **Cloud Platform**: AWS (Mumbai Region `ap-south-1`)
+- **Cloud Platform**: AWS (Sovereign Region `ap-south-1`)
 - **Container Orchestration**: AWS Elastic Kubernetes Service (EKS v1.30+)
 - **Container Registry**: Amazon Elastic Container Registry (ECR)
 - **Ingress Controller**: AWS Application Load Balancer (ALB) Controller with ACM TLS/SSL
@@ -24,10 +24,10 @@
 
 ## 2. Step-by-Step Deployment Guide
 
-### Step 1: Authenticate with AWS & ECR (Mumbai `ap-south-1`)
+### Step 1: Authenticate with AWS & ECR (`ap-south-1`)
 
 ```bash
-# 1. Configure AWS CLI with Mumbai region
+# 1. Configure AWS CLI with sovereign region
 export AWS_REGION="ap-south-1"
 export AWS_ACCOUNT_ID="123456789012"
 aws configure set region $AWS_REGION
@@ -69,7 +69,7 @@ node server/db/migrations/migrate.js up
 
 ```bash
 # 1. Connect to EKS Cluster
-aws eks update-kubeconfig --name hind-db-cluster-mumbai --region ap-south-1
+aws eks update-kubeconfig --name hind-db-cluster-sovereign --region ap-south-1
 
 # 2. Apply Namespace, ConfigMap & Secrets
 kubectl apply -f k8s/namespace.yaml

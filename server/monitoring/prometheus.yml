@@ -7,7 +7,7 @@ global:
   scrape_interval: 5s
   evaluation_interval: 5s
   external_labels:
-    cluster: 'hind-db-mumbai-ap-south-1'
+    cluster: 'hind-db-sovereign-ap-south-1'
     environment: 'production'
 
 scrape_configs:
@@ -18,7 +18,7 @@ scrape_configs:
       - targets: ['app:4000', 'host.docker.internal:4000']
         labels:
           region: 'ap-south-1'
-          datacenter: 'mumbai-dc1'
+          datacenter: 'sovereign-dc1'
 
   # 2. Redis Exporter
   - job_name: 'hind-db-redis'

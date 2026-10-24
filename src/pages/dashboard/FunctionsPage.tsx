@@ -23,7 +23,7 @@ export const FunctionsPage: React.FC = () => {
 
   // Logs stream
   const [logs, setLogs] = useState<string[]>([
-    '[2026-09-29 18:30:10.451] INFO: Edge Function worker boot initialized (Region: Mumbai ap-south-1)',
+    '[2026-09-29 18:30:10.451] INFO: Edge Function worker boot initialized (Region: ap-south-1 Sovereign)',
     '[2026-09-29 18:30:10.480] INFO: Runtime V8 Isolate initialized in 1.4ms',
     '[2026-09-29 18:31:02.100] HTTP POST /v1/functions/razorpay-webhook - 200 OK (2.8ms)',
     '[2026-09-29 18:34:15.912] HTTP POST /v1/functions/razorpay-webhook - 200 OK (2.4ms)',
@@ -91,7 +91,7 @@ serve(async (req) => {
             Edge Serverless Functions
           </h1>
           <p className="text-[#475569] text-sm mt-1">
-            Zero-cold-start TypeScript microservices executed on Hind Edge across Mumbai, Delhi, and Bangalore.
+            Zero-cold-start TypeScript microservices executed on Hind Edge across sovereign distributed nodes.
           </p>
         </div>
 
@@ -208,7 +208,7 @@ serve(async (req) => {
               </div>
               <span className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Listening to Mumbai Edge Stream
+                Listening to Sovereign Edge Stream
               </span>
             </div>
 

@@ -38,7 +38,7 @@ export const CTA: React.FC = () => {
             </h2>
 
             <p className="text-base sm:text-xl text-slate-300 mb-9 leading-relaxed font-sans max-w-2xl mx-auto">
-              Get started with our forever-free tier (₹0/mo). Scale effortlessly to managed PostgreSQL with instant UPI billing and Mumbai edge latency.
+              Get started with our forever-free tier (₹0/mo). Scale effortlessly to managed PostgreSQL with instant UPI billing and sub-millisecond edge latency.
             </p>
 
             {/* Action Buttons */}

@@ -39,15 +39,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [databases] = useState<DatabaseItem[]>(() => dashboardApi.getDatabases());
   const [activeDatabase, setActiveDatabase] = useState<DatabaseItem>(
-    () => databases[0] || { id: 'db_1', name: 'production-ecommerce-cluster', region: 'Mumbai', plan: 'Pro' }
+    () => databases[0] || { id: 'db_1', name: 'production-ecommerce-cluster', region: 'Sovereign-01', plan: 'Pro' }
   );
   const [dbDropdownOpen, setDbDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const notifications = [
-    { id: 1, text: 'Auto-snapshot Mumbai Cluster complete (4.2 GB)', time: '10m ago', unread: true },
+    { id: 1, text: 'Auto-snapshot Primary Cluster complete (4.2 GB)', time: '10m ago', unread: true },
     { id: 2, text: 'Function razorpay-webhook deployed successfully', time: '18m ago', unread: true },
-    { id: 3, text: 'New login detected from Mumbai (Chrome / macOS)', time: '1h ago', unread: false },
+    { id: 3, text: 'New login detected (Chrome / macOS)', time: '1h ago', unread: false },
   ];
 
   const navItems = [
@@ -277,7 +277,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {/* Region Pill */}
               <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#1E3A8A] border border-blue-200 text-xs font-medium">
                 <Globe2 className="w-3.5 h-3.5 text-[#1E3A8A]" />
-                <span>ap-south-1 (Mumbai)</span>
+                <span>ap-south-1 (Sovereign)</span>
               </div>
 
               {/* Notification Bell */}

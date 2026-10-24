@@ -84,7 +84,7 @@ export const DatabaseService = {
       snapshotId: `snap_${databaseId}_${Date.now()}`,
       sizeBytes: 4294967296, // 4.2 GB
       status: 'COMPLETED',
-      s3Location: `s3://hind-backups-mumbai/${databaseId}/${new Date().toISOString().slice(0, 10)}.dump`,
+      s3Location: `s3://hind-backups/${databaseId}/${new Date().toISOString().slice(0, 10)}.dump`,
       completedAt: new Date().toISOString(),
     };
     logger.info(`[Automated Backup]: Snapshot created successfully: ${snapshotMeta.snapshotId}`);

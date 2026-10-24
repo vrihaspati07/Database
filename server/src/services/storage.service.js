@@ -48,7 +48,7 @@ export const StorageService = {
     }
 
     return {
-      uploadUrl: `https://storage-mumbai.hind.io/${defaultBucket}/${objectKey}?token=mock_sign`,
+      uploadUrl: `https://storage.hind.io/${defaultBucket}/${objectKey}?token=mock_sign`,
       key: objectKey,
       bucket: defaultBucket,
       mock: true,
@@ -67,7 +67,7 @@ export const StorageService = {
       }
     }
 
-    return `https://storage-mumbai.hind.io/${defaultBucket}/${objectKey}`;
+    return `https://storage.hind.io/${defaultBucket}/${objectKey}`;
   },
 
   /**

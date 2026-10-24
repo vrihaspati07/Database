@@ -58,7 +58,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo }) => {
               </span>
               <span className="tracking-wide">🇮🇳 Sovereign Cloud Platform</span>
               <span className="text-slate-300">•</span>
-              <span className="text-[#475569] font-normal">Mumbai & Bengaluru Edge</span>
+              <span className="text-[#475569] font-normal">Sub-millisecond Edge</span>
             </div>
 
             {/* H1: 56px Bold (38px on mobile, 48px on tablet, 56px on desktop) */}
@@ -131,7 +131,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo }) => {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-[#0F172A] font-sans">
-                      hind-cluster-mumbai-01
+                      hind-cluster-primary-01
                     </h3>
                     <p className="text-[11px] text-[#475569] font-mono">PostgreSQL 16.4 • pgvector</p>
                   </div>
@@ -251,7 +251,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDemo }) => {
                   100% Indian Data Centers
                 </div>
                 <div className="text-[10px] text-[#475569] font-mono">
-                  Mumbai & Bengaluru Clusters
+                  Sovereign Cloud Clusters
                 </div>
               </div>
             </div>

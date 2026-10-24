@@ -81,9 +81,9 @@ export interface ApiKeyItem {
 // Initial default seed datasets
 const SEED_DATABASES: DatabaseItem[] = [
   {
-    id: 'db_mumbai_01',
+    id: 'db_sovereign_01',
     name: 'production-ecommerce-cluster',
-    region: 'Mumbai (Maharashtra)',
+    region: 'Sovereign (ap-south-1)',
     plan: 'Pro',
     status: 'ACTIVE',
     size_bytes: 4294967296, // 4.2 GB
@@ -92,9 +92,9 @@ const SEED_DATABASES: DatabaseItem[] = [
     rowsCount: 101470,
   },
   {
-    id: 'db_bangalore_02',
+    id: 'db_sovereign_02',
     name: 'analytics-telemetry-engine',
-    region: 'Bangalore (Karnataka)',
+    region: 'Sovereign (ap-south-2)',
     plan: 'Enterprise',
     status: 'ACTIVE',
     size_bytes: 18253611008, // 18.2 GB
@@ -128,7 +128,7 @@ const SEED_TABLES: TableItem[] = [
       { name: 'amount_inr', type: 'INTEGER', isPrimary: false, nullable: false, default: '0' },
       { name: 'payment_method', type: 'VARCHAR(50)', isPrimary: false, nullable: false, default: 'UPI' },
       { name: 'status', type: 'VARCHAR(50)', isPrimary: false, nullable: false, default: 'DELIVERED' },
-      { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Mumbai' },
+      { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Delhi NCR' },
       { name: 'created_at', type: 'TIMESTAMP', isPrimary: false, nullable: false, default: 'NOW()' },
     ],
   },
@@ -143,7 +143,7 @@ const SEED_TABLES: TableItem[] = [
       { name: 'email', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
       { name: 'name', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
       { name: 'phone', type: 'VARCHAR(20)', isPrimary: false, nullable: true, default: '' },
-      { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Bengaluru' },
+      { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Hyderabad' },
       { name: 'created_at', type: 'TIMESTAMP', isPrimary: false, nullable: false, default: 'NOW()' },
     ],
   },
@@ -165,16 +165,16 @@ const SEED_TABLES: TableItem[] = [
 
 const SEED_ROWS: Record<string, any[]> = {
   quick_commerce_orders: [
-    { id: 'ord_bom_101', customer_name: 'Aarav Sharma', amount_inr: 1499, payment_method: 'UPI (PhonePe)', status: 'DELIVERED', city: 'Mumbai', created_at: '2026-09-29 18:30:10' },
-    { id: 'ord_blr_102', customer_name: 'Pooja Iyer', amount_inr: 850, payment_method: 'RuPay Card', status: 'PROCESSING', city: 'Bengaluru', created_at: '2026-09-29 18:31:42' },
+    { id: 'ord_del_101', customer_name: 'Aarav Sharma', amount_inr: 1499, payment_method: 'UPI (PhonePe)', status: 'DELIVERED', city: 'Delhi NCR', created_at: '2026-09-29 18:30:10' },
+    { id: 'ord_hyd_102', customer_name: 'Pooja Iyer', amount_inr: 850, payment_method: 'RuPay Card', status: 'PROCESSING', city: 'Hyderabad', created_at: '2026-09-29 18:31:42' },
     { id: 'ord_del_103', customer_name: 'Rohan Gupta', amount_inr: 3200, payment_method: 'NetBanking (HDFC)', status: 'CONFIRMED', city: 'Delhi NCR', created_at: '2026-09-29 18:34:05' },
     { id: 'ord_hyd_104', customer_name: 'Divya Reddy', amount_inr: 950, payment_method: 'UPI (GPay)', status: 'DELIVERED', city: 'Hyderabad', created_at: '2026-09-29 18:38:19' },
     { id: 'ord_pune_105', customer_name: 'Ananya Deshmukh', amount_inr: 2150, payment_method: 'UPI (Paytm)', status: 'IN_TRANSIT', city: 'Pune', created_at: '2026-09-29 18:41:00' },
     { id: 'ord_che_106', customer_name: 'Karthik Subramanian', amount_inr: 1800, payment_method: 'RuPay Card', status: 'DELIVERED', city: 'Chennai', created_at: '2026-09-29 18:45:22' },
   ],
   users: [
-    { id: 'usr_in_101', email: 'aarav.s@quickmart.in', name: 'Aarav Sharma', phone: '+91 98201 44910', city: 'Mumbai', created_at: '2026-09-28 14:10:00' },
-    { id: 'usr_in_102', email: 'pooja.iyer@finset.io', name: 'Pooja Iyer', phone: '+91 94481 22819', city: 'Bengaluru', created_at: '2026-09-28 15:20:15' },
+    { id: 'usr_in_101', email: 'aarav.s@quickmart.in', name: 'Aarav Sharma', phone: '+91 98201 44910', city: 'Delhi NCR', created_at: '2026-09-28 14:10:00' },
+    { id: 'usr_in_102', email: 'pooja.iyer@finset.io', name: 'Pooja Iyer', phone: '+91 94481 22819', city: 'Hyderabad', created_at: '2026-09-28 15:20:15' },
     { id: 'usr_in_103', email: 'rohan.g@bharatcart.in', name: 'Rohan Gupta', phone: '+91 98110 55192', city: 'Delhi NCR', created_at: '2026-09-28 16:45:30' },
     { id: 'usr_in_104', email: 'divya.reddy@hyderabad.dev', name: 'Divya Reddy', phone: '+91 99890 11223', city: 'Hyderabad', created_at: '2026-09-28 18:05:00' },
   ],
@@ -188,9 +188,9 @@ const SEED_ROWS: Record<string, any[]> = {
 const SEED_STORAGE_FILES: StorageFile[] = [
   { id: 'f1', name: 'user_avatars', type: 'folder', path: '/user_avatars', size: 524288000, itemsCount: 1420, modified: '2026-09-29T12:00:00Z' },
   { id: 'f2', name: 'kyc_documents', type: 'folder', path: '/kyc_documents', size: 1610612736, itemsCount: 4800, modified: '2026-09-29T14:20:00Z' },
-  { id: 'f3', name: 'product_catalog_2026.pdf', type: 'file', path: '/product_catalog_2026.pdf', size: 4820000, mime: 'application/pdf', modified: '2026-09-28T09:15:00Z', publicUrl: 'https://storage-mumbai.hind.io/production-assets/product_catalog_2026.pdf' },
-  { id: 'f4', name: 'hero_database_banner.png', type: 'file', path: '/hero_database_banner.png', size: 1250000, mime: 'image/png', modified: '2026-09-27T16:30:00Z', publicUrl: 'https://storage-mumbai.hind.io/production-assets/hero_database_banner.png' },
-  { id: 'f5', name: 'gst_invoice_template.xlsx', type: 'file', path: '/gst_invoice_template.xlsx', size: 340000, mime: 'application/vnd.ms-excel', modified: '2026-09-26T11:00:00Z', publicUrl: 'https://storage-mumbai.hind.io/production-assets/gst_invoice_template.xlsx' },
+  { id: 'f3', name: 'product_catalog_2026.pdf', type: 'file', path: '/product_catalog_2026.pdf', size: 4820000, mime: 'application/pdf', modified: '2026-09-28T09:15:00Z', publicUrl: 'https://storage.hind.io/production-assets/product_catalog_2026.pdf' },
+  { id: 'f4', name: 'hero_database_banner.png', type: 'file', path: '/hero_database_banner.png', size: 1250000, mime: 'image/png', modified: '2026-09-27T16:30:00Z', publicUrl: 'https://storage.hind.io/production-assets/hero_database_banner.png' },
+  { id: 'f5', name: 'gst_invoice_template.xlsx', type: 'file', path: '/gst_invoice_template.xlsx', size: 340000, mime: 'application/vnd.ms-excel', modified: '2026-09-26T11:00:00Z', publicUrl: 'https://storage.hind.io/production-assets/gst_invoice_template.xlsx' },
 ];
 
 const SEED_FUNCTIONS: EdgeFunction[] = [
@@ -381,7 +381,7 @@ export const dashboardApi = {
       size: file.size,
       mime: file.mime || 'application/octet-stream',
       modified: new Date().toISOString(),
-      publicUrl: `https://storage-mumbai.hind.io/production-assets/${file.name}`,
+      publicUrl: `https://storage.hind.io/production-assets/${file.name}`,
     };
     const updated = [newFile, ...files];
     localStorage.setItem('hind_storage_files', JSON.stringify(updated));

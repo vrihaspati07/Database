@@ -6,7 +6,7 @@ metadata:
 data:
   NODE_ENV: "production"
   PORT: "4000"
-  HIND_REGION: "ap-south-1 (Mumbai)"
+  HIND_REGION: "ap-south-1 (Sovereign)"
   PG_HOST: "hind-db-pg-cluster.internal.hind.io"
   PG_PORT: "5432"
   PG_DATABASE: "hind_db_production"
@@ -14,10 +14,10 @@ data:
   PG_MAX_POOL: "30"
   REDIS_HOST: "hind-db-redis-cluster.internal.hind.io"
   REDIS_PORT: "6379"
-  MINIO_ENDPOINT: "storage-mumbai.hind.io"
+  MINIO_ENDPOINT: "storage.hind.io"
   MINIO_PORT: "443"
   MINIO_USE_SSL: "true"
-  MINIO_BUCKET: "hind-assets-mumbai"
+  MINIO_BUCKET: "hind-assets"
   METRICS_ENABLED: "true"
 ---
 apiVersion: v1

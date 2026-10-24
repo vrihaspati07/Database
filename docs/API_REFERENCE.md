@@ -1,7 +1,7 @@
 # Hind DB - API Reference Specification
 
 > **Base URL**: `http://localhost:4000/api/v1` (Local) / `https://api.hind.io/api/v1` (Cloud)  
-> **Region**: AWS Mumbai (`ap-south-1`)  
+> **Region**: AWS Sovereign Region (`ap-south-1`)  
 > **Standard Response Format**: All responses return a standard JSON envelope with `success`, `data`/`error`, and `meta`.
 
 ---
@@ -15,7 +15,7 @@
   "data": { ... },
   "meta": {
     "timestamp": "2026-10-25T00:00:00.000Z",
-    "region": "ap-south-1 (Mumbai)",
+    "region": "ap-south-1 (Sovereign)",
     "attribution": "© 2026 Hind. A Hind India Private Limited Company."
   }
 }
@@ -31,7 +31,7 @@
   },
   "meta": {
     "timestamp": "2026-10-25T00:00:00.000Z",
-    "region": "ap-south-1 (Mumbai)"
+    "region": "ap-south-1 (Sovereign)"
   }
 }
 ```
@@ -86,7 +86,7 @@ curl -X POST https://api.hind.io/api/v1/databases \
   -H "Content-Type: application/json" \
   -d '{
     "name": "e-commerce-prod",
-    "region": "mumbai-dc-01",
+    "region": "sovereign-dc-01",
     "plan": "Pro"
   }'
 ```

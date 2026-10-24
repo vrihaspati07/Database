@@ -37,7 +37,7 @@ export async function sendVerificationEmail({ to, name, token }) {
           <p style="font-size: 13px; color: #94A3B8;">This verification link will expire in 24 hours. If you did not create an account, you can safely ignore this email.</p>
           <div class="footer">
             © 2026 Hind. A Hind India Private Limited Company.<br>
-            Mumbai • Bengaluru • hind.io
+            India • hind.io
           </div>
         </div>
       </body>
@@ -81,7 +81,7 @@ export async function sendPasswordResetEmail({ to, name, token }) {
           <p style="font-size: 13px; color: #94A3B8;">This reset link will expire in 1 hour. If you did not make this request, please ensure your account is secure.</p>
           <div class="footer">
             © 2026 Hind. A Hind India Private Limited Company.<br>
-            Mumbai • Bengaluru • hind.io
+            India • hind.io
           </div>
         </div>
       </body>

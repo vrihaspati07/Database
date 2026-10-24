@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/Kubernetes-EKS-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" alt="Kubernetes" />
-  <img src="https://img.shields.io/badge/Region-AWS_Mumbai_(ap--south--1)-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS Mumbai" />
+  <img src="https://img.shields.io/badge/Region-AWS_Sovereign_(ap--south--1)-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS Sovereign Region" />
 </p>
 
 ---
@@ -51,7 +51,7 @@
 | Feature | Description |
 |---|---|
 | 🗄️ **SQL Studio & Table Designer** | Intuitive visual table creator, schema migrations, and interactive query workbench with live syntax highlighting. |
-| ⚡ **Supersonic Latency** | Optimized connection pooling and distributed Redis caching for sub-millisecond reads in AWS Mumbai (`ap-south-1`). |
+| ⚡ **Supersonic Latency** | Optimized connection pooling and distributed Redis caching for sub-millisecond reads in AWS Sovereign Cloud (`ap-south-1`). |
 | 🔐 **Built-in Auth & RLS** | Robust JWT authentication, password hashing, MFA support, and granular Row Level Security isolating tenant data. |
 | 📦 **S3-Compatible Object Store** | MinIO multi-tenant file and asset storage with presigned URLs, MIME filtering, and metadata indexing. |
 | ⚡ **Serverless Edge Functions** | Deploy and execute TypeScript/JavaScript edge workers triggered via HTTP, cron, or database events. |
@@ -112,7 +112,7 @@
 ### DevOps & Cloud
 - **Containers**: Multi-stage Dockerfiles (`Dockerfile.backend`, `Dockerfile.frontend`)
 - **Orchestration**: Docker Compose, Kubernetes (AWS EKS v1.30+)
-- **Region**: AWS Mumbai (`ap-south-1`)
+- **Region**: AWS Sovereign Region (`ap-south-1`)
 - **CI/CD**: GitHub Actions
 
 ---
@@ -204,7 +204,7 @@ Visit **http://localhost:5173** to access the Hind DB Developer Console!
 
 ## 🚢 Production Deployment
 
-For complete instructions on deploying to **AWS Elastic Kubernetes Service (EKS)** in Mumbai (`ap-south-1`):
+For complete instructions on deploying to **AWS Elastic Kubernetes Service (EKS)** in Sovereign Region (`ap-south-1`):
 
 ```bash
 # Apply all Kubernetes manifests

@@ -115,7 +115,7 @@ export const ProductDeepDives: React.FC = () => {
                   <span className="text-[#1a1a1a] font-semibold text-[12px]">Real-Time Event Stream</span>
                 </div>
                 <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-semibold">
-                  Latency: 2.4ms (Mumbai)
+                  Latency: 2.4ms (Primary Edge)
                 </span>
               </div>
 
@@ -168,7 +168,7 @@ export const ProductDeepDives: React.FC = () => {
 
             {/* Body text */}
             <p className="text-base sm:text-lg text-[#4a4a4a] leading-relaxed font-sans">
-              Our low-latency Mumbai edge nodes stream database change data capture (CDC) directly to connected clients without heavy polling, slashing server compute by up to 90%.
+              Our low-latency sovereign edge nodes stream database change data capture (CDC) directly to connected clients without heavy polling, slashing server compute by up to 90%.
             </p>
 
             <div className="space-y-3.5 pt-2 text-sm sm:text-base text-[#4a4a4a] font-sans">
@@ -222,7 +222,7 @@ export const ProductDeepDives: React.FC = () => {
                 <div className="p-1 rounded-full bg-orange-500/15 text-orange-600 mt-0.5">
                   <ShieldCheck className="w-3.5 h-3.5" />
                 </div>
-                <span><strong className="text-[#1a1a1a]">DPDP Act 2026 Ready:</strong> All user records, databases, and object files stored strictly in Mumbai/Bangalore.</span>
+                <span><strong className="text-[#1a1a1a]">DPDP Act 2026 Ready:</strong> All user records, databases, and object files stored strictly in sovereign Indian cloud facilities.</span>
               </div>
               <div className="flex items-start gap-3">
                 <div className="p-1 rounded-full bg-orange-500/15 text-orange-600 mt-0.5">
@@ -237,7 +237,7 @@ export const ProductDeepDives: React.FC = () => {
           <div className="lg:col-span-6 grid grid-cols-2 gap-4 font-mono text-xs">
             <div className="p-6 rounded-2xl bg-white border border-[#E5E5E5] shadow-sm relative">
               <Plus className="w-3 h-3 text-slate-300 absolute top-2.5 right-2.5" />
-              <span className="text-orange-600 font-bold block mb-1">MUMBAI EDGE</span>
+              <span className="text-orange-600 font-bold block mb-1">SOVEREIGN EDGE</span>
               <span className="text-2xl font-bold text-[#1a1a1a] font-sans">20ms - 40ms</span>
               <p className="text-[#6b6b6b] text-xs mt-2 font-sans">Ultra-low latency across all Indian cities.</p>
             </div>
@@ -246,7 +246,7 @@ export const ProductDeepDives: React.FC = () => {
               <Plus className="w-3 h-3 text-slate-300 absolute top-2.5 right-2.5" />
               <span className="text-emerald-700 font-bold block mb-1">LOCAL COMPLIANCE</span>
               <span className="text-2xl font-bold text-[#1a1a1a] font-sans">100% India</span>
-              <p className="text-[#6b6b6b] text-xs mt-2 font-sans">Strict data residency in Mumbai & Bangalore.</p>
+              <p className="text-[#6b6b6b] text-xs mt-2 font-sans">Strict sovereign cloud data residency.</p>
             </div>
 
             <div className="p-6 rounded-2xl bg-white border border-[#E5E5E5] shadow-sm relative">

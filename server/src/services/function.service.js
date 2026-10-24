@@ -36,7 +36,7 @@ export const FunctionService = {
 
     // Record deployment log
     const timestamp = new Date().toISOString();
-    this.appendLog(fn.id, `[${timestamp}] DEPLOY: Function '${name}' compiled & deployed across Mumbai, Delhi, Bangalore edge`);
+    this.appendLog(fn.id, `[${timestamp}] DEPLOY: Function '${name}' compiled & deployed across sovereign distributed edge`);
 
     return fn;
   },
@@ -89,7 +89,7 @@ export const FunctionService = {
       // Mock invocation wrapper
       const wrapperScript = new vm.Script(`
         (async () => {
-          return { status: 200, data: { processed: true, eventReceived: event.payload }, executionRegion: 'Mumbai ap-south-1' };
+          return { status: 200, data: { processed: true, eventReceived: event.payload }, executionRegion: 'ap-south-1 Sovereign' };
         })()
       `);
 

@@ -15,7 +15,7 @@ groups:
           region: ap-south-1
         annotations:
           summary: "Hind DB API HTTP 5xx error rate exceeded 5%"
-          description: "Cluster in Mumbai ap-south-1 is experiencing elevated 5xx error rates."
+          description: "Cluster in sovereign ap-south-1 is experiencing elevated 5xx error rates."
 
       # 2. Elevated Query Latency Alert
       - alert: HindDbHighQueryLatency

@@ -18,9 +18,9 @@ export const DatabaseModel = {
     } catch (e) {
       return [
         {
-          id: 'db_mumbai_01',
+          id: 'db_sovereign_01',
           name: 'production-ecommerce-cluster',
-          region: 'Mumbai (Maharashtra)',
+          region: 'Sovereign Primary (ap-south-1)',
           plan: 'Pro',
           status: 'ACTIVE',
           size_bytes: 4294967296,

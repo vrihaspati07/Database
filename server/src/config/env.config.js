@@ -18,7 +18,7 @@ export const envConfig = {
     jwtSecret: process.env.JWT_SECRET || 'hind_db_super_secret_jwt_key_india_2026',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
     refreshSecret: process.env.REFRESH_TOKEN_SECRET || 'hind_db_refresh_secret_2026',
-    region: process.env.HIND_REGION || 'ap-south-1 (Mumbai)',
+    region: process.env.HIND_REGION || 'ap-south-1 (Sovereign)',
     company: 'Hind India Private Limited',
   },
   db: {
@@ -46,7 +46,7 @@ export const envConfig = {
     useSSL: process.env.MINIO_USE_SSL === 'true',
     accessKey: process.env.MINIO_ACCESS_KEY || 'hind_minio_admin',
     secretKey: process.env.MINIO_SECRET_KEY || 'hind_minio_secret_key_2026',
-    bucketName: process.env.MINIO_BUCKET || 'hind-assets-mumbai',
+    bucketName: process.env.MINIO_BUCKET || 'hind-assets',
     region: 'ap-south-1',
   },
   queue: {

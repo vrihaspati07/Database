@@ -2,7 +2,7 @@
 
 > **Product**: Hind DB  
 > **Company**: Hind India Private Limited  
-> **Region**: AWS Mumbai (`ap-south-1`)  
+> **Region**: AWS Sovereign Region (`ap-south-1`)  
 > **Compliance**: DPDP Act (India 2026), ISO 27001, SOC 2 Type II  
 > **Copyright**: © 2026 Hind. A Hind India Private Limited Company.
 
@@ -100,7 +100,7 @@ Hind DB is a sovereign, high-performance database and backend application platfo
 
 ## 4. Security & Compliance (DPDP Act India 2026)
 
-1. **Data Sovereignty**: All cluster workloads, persistent volumes, database replicas, and object backups reside strictly within AWS Mumbai (`ap-south-1`).
+1. **Data Sovereignty**: All cluster workloads, persistent volumes, database replicas, and object backups reside strictly within AWS Sovereign Region (`ap-south-1`).
 2. **Encryption Standards**:
    - **In-Transit**: TLS 1.3 enforced across all public endpoints and inter-service mesh communication.
    - **At-Rest**: AES-256 encryption across PostgreSQL volumes, Redis append-only files, and MinIO storage blocks.

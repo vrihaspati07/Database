@@ -15,7 +15,7 @@ SELECT
     payment_method, 
     delivery_city 
 FROM quick_commerce_orders 
-WHERE delivery_city IN ('Mumbai', 'Bengaluru', 'Delhi') 
+WHERE status = 'DELIVERED' 
 ORDER BY created_at DESC 
 LIMIT 4;`);
 
@@ -33,10 +33,10 @@ LIMIT 4;`);
   };
 
   const results = [
-    { order_id: 'ord_bom_9011', customer_name: 'Aarav Mehta', amount_inr: '₹1,490', payment_method: 'UPI / PhonePe', delivery_city: 'Mumbai (Andheri)' },
-    { order_id: 'ord_blr_4412', customer_name: 'Pooja Iyer', amount_inr: '₹840', payment_method: 'RuPay Card', delivery_city: 'Bengaluru (Koramangala)' },
-    { order_id: 'ord_del_7820', customer_name: 'Rohan Gupta', amount_inr: '₹3,200', payment_method: 'NetBanking / HDFC', delivery_city: 'Delhi NCR (Gurugram)' },
-    { order_id: 'ord_hyd_1109', customer_name: 'Divya Reddy', amount_inr: '₹950', payment_method: 'UPI / GPay', delivery_city: 'Hyderabad (Gachibowli)' },
+    { order_id: 'ord_in_9011', customer_name: 'Aarav Mehta', amount_inr: '₹1,490', payment_method: 'UPI / PhonePe', delivery_city: 'Delhi NCR' },
+    { order_id: 'ord_in_4412', customer_name: 'Pooja Iyer', amount_inr: '₹840', payment_method: 'RuPay Card', delivery_city: 'Hyderabad' },
+    { order_id: 'ord_in_7820', customer_name: 'Rohan Gupta', amount_inr: '₹3,200', payment_method: 'NetBanking / HDFC', delivery_city: 'Pune' },
+    { order_id: 'ord_in_1109', customer_name: 'Divya Reddy', amount_inr: '₹950', payment_method: 'UPI / GPay', delivery_city: 'Chennai' },
   ];
 
   return (
@@ -53,10 +53,10 @@ LIMIT 4;`);
               <h3 className="text-sm font-bold text-white font-sans flex items-center gap-2">
                 <span>Hind DB Live Sandbox</span>
                 <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">
-                  MUMBAI DC-01
+                  PRIMARY DC-01
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-400">PostgreSQL 16.4 • Sub-3ms Indian edge</p>
+              <p className="text-[11px] text-slate-400">PostgreSQL 16.4 • Sub-3ms sovereign edge</p>
             </div>
           </div>
 
@@ -127,7 +127,7 @@ LIMIT 4;`);
 
         {/* Footer */}
         <div className="px-6 py-3 bg-[#060A17] border-t border-slate-800 flex items-center justify-between text-slate-400 text-[11px]">
-          <span className="text-slate-400">Powered by Hind DB Mumbai Core Cluster</span>
+          <span className="text-slate-400">Powered by Hind DB Sovereign Core Cluster</span>
           <span className="text-orange-400 font-bold">Managed PostgreSQL at ₹999/mo</span>
         </div>
 

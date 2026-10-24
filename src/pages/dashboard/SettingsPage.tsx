@@ -24,7 +24,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenInviteMember }
 
   // General tab state
   const [projectName, setProjectName] = useState('Production Core Platform');
-  const [projectRegion, setProjectRegion] = useState('Mumbai (ap-south-1)');
+  const [projectRegion, setProjectRegion] = useState('Sovereign Primary (ap-south-1)');
   const [savedGeneral, setSavedGeneral] = useState(false);
 
   // Billing tab state
@@ -48,9 +48,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenInviteMember }
   // Security tab state
   const [mfaActive, setMfaActive] = useState(true);
   const activeSessions = [
-    { id: 's1', device: 'Chrome on macOS (Mumbai)', ip: '49.37.12.89', lastActive: 'Just now (Current Session)', current: true },
-    { id: 's2', device: 'Hind CLI v2.4 (Bengaluru Server)', ip: '103.21.244.0', lastActive: '12 minutes ago', current: false },
-    { id: 's3', device: 'Safari on iPhone 15 Pro (Delhi)', ip: '157.34.88.12', lastActive: '4 hours ago', current: false },
+    { id: 's1', device: 'Chrome on macOS', ip: '49.37.12.89', lastActive: 'Just now (Current Session)', current: true },
+    { id: 's2', device: 'Hind CLI v2.4 (Sovereign Node)', ip: '103.21.244.0', lastActive: '12 minutes ago', current: false },
+    { id: 's3', device: 'Safari on iPhone 15 Pro', ip: '157.34.88.12', lastActive: '4 hours ago', current: false },
   ];
 
   const auditLogs = [
@@ -157,9 +157,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenInviteMember }
                 onChange={(e) => setProjectRegion(e.target.value)}
                 className="w-full max-w-md px-3.5 py-2 text-xs rounded-xl border border-[#CBD5E1] bg-white outline-none"
               >
-                <option value="Mumbai (ap-south-1)">Mumbai (ap-south-1)</option>
-                <option value="Bangalore (ap-south-2)">Bangalore (ap-south-2)</option>
-                <option value="Delhi NCR (ap-north-1)">Delhi NCR (ap-north-1)</option>
+                <option value="Sovereign Primary (ap-south-1)">Sovereign Primary (ap-south-1)</option>
+                <option value="Sovereign Secondary (ap-south-2)">Sovereign Secondary (ap-south-2)</option>
+                <option value="Sovereign North (ap-north-1)">Sovereign North (ap-north-1)</option>
               </select>
             </div>
 

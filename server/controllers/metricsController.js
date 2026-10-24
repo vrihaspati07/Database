@@ -40,7 +40,7 @@ export const metricsController = {
       status: isHealthy ? 'HEALTHY' : 'DEGRADED',
       product: 'Hind DB Core Engine',
       version: '2.4.0',
-      region: 'ap-south-1 (Mumbai)',
+      region: 'ap-south-1 (Sovereign)',
       sla: '99.999%',
       timestamp: new Date().toISOString(),
       services: {

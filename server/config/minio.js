@@ -85,7 +85,7 @@ export const storage = {
       }
     }
 
-    return `https://storage-mumbai.hind.io/${config.minio.bucketName}/${objectName}`;
+    return `https://storage.hind.io/${config.minio.bucketName}/${objectName}`;
   },
 
   /**
@@ -102,13 +102,13 @@ export const storage = {
       );
       return {
         key: objectName,
-        url: `https://storage-mumbai.hind.io/${config.minio.bucketName}/${objectName}`,
+        url: `https://storage.hind.io/${config.minio.bucketName}/${objectName}`,
       };
     }
 
     return {
       key: objectName,
-      url: `https://storage-mumbai.hind.io/${config.minio.bucketName}/${objectName}`,
+      url: `https://storage.hind.io/${config.minio.bucketName}/${objectName}`,
       mock: true,
     };
   },

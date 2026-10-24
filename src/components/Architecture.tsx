@@ -29,10 +29,10 @@ export const Architecture: React.FC<ArchitectureProps> = () => {
     {
       id: 2,
       title: 'Scenario 2: End-User Makes Live API Request',
-      time: '20-40ms (Mumbai Server)',
+      time: '20-40ms (Sovereign Edge)',
       steps: [
         'End-user hits yourapp.hindindia.io/api/users',
-        'Kong/Envoy API Gateway in Mumbai applies rate limiting & JWT verification',
+        'Kong/Envoy API Gateway applies rate limiting & JWT verification',
         'FastAPI backend service queries PostgreSQL via PgBouncer pooling',
         'Redis 7 cache hit returns JSON response with zero delay',
         'Request logged & metered transparently without cold starts'
@@ -111,7 +111,7 @@ export const Architecture: React.FC<ArchitectureProps> = () => {
             <div className="p-6 rounded-2xl bg-[#F8F8FA] border border-[#E5E5E5]">
               <span className="text-[11px] font-mono uppercase text-[#6b6b6b] block mb-1">Layer 4: Data Layer</span>
               <h4 className="text-base font-bold text-[#1a1a1a] font-sans">Postgres 16 + Redis 7</h4>
-              <p className="text-xs text-[#6b6b6b] mt-1.5 font-sans">Mumbai & Bangalore Edge</p>
+              <p className="text-xs text-[#6b6b6b] mt-1.5 font-sans">Sovereign Cloud Edge</p>
               <span className="inline-block mt-4 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 text-[11px] font-mono font-semibold">
                 MinIO S3 + PgBouncer
               </span>
