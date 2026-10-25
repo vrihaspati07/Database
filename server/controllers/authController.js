@@ -1,5 +1,5 @@
 /**
- * Hind DB - Complete Authentication Controller
+ * Hind DB - Complete Sovereign Authentication Controller
  * Company: Hind India Private Limited
  * Product: Hind DB (hind.io)
  * Copyright: © 2026 Hind. A Hind India Private Limited Company.
@@ -10,735 +10,653 @@ import {
   verifyPassword,
   generateAccessToken,
   generateRefreshToken,
-  hashToken,
   generateVerificationToken,
-  generateMfaSecret,
-  verifyTotpCode,
+  generateRandomToken,
+  hashToken,
 } from '../services/security.js';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
-import { mockStore, query } from '../db/index.js';
-import { config } from '../config.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/mailService.js';
+import { generateGoogleAuthUrl, verifyGoogleAuthCode } from '../services/googleAuth.js';
+import { redis } from '../config/redis.js';
+import { pool, query } from '../config/database.js';
+import { mockStore } from '../db/index.js';
+import { config } from '../config/index.js';
 
-// ==========================================
-// 1. Signup (POST /api/v1/auth/signup)
-// ==========================================
-export async function signup(req, res) {
+// Helper: Query user by email (DB with MockStore fallback)
+async function findUserByEmail(emailClean) {
   try {
-    const { email, password, name } = req.body;
-
-    // Validation
-    if (!email || !password || !name) {
-      return res.status(400).json({
-        success: false,
-        error: 'Validation Error',
-        message: 'Name, email, and password are required.',
-      });
+    const res = await query('SELECT * FROM users WHERE email = $1', [emailClean]);
+    if (res && res.rows && res.rows.length > 0) {
+      return res.rows[0];
     }
+  } catch (err) {
+    // DB not available, use fallback
+  }
+  return mockStore.findUserByEmail(emailClean);
+}
 
+// Helper: Query user by ID (DB with MockStore fallback)
+async function findUserById(id) {
+  try {
+    const res = await query('SELECT * FROM users WHERE id = $1', [id]);
+    if (res && res.rows && res.rows.length > 0) {
+      return res.rows[0];
+    }
+  } catch (err) {
+    // DB not available, use fallback
+  }
+  return mockStore.findUserById(id);
+}
+
+// Helper: Query OAuth account (DB with MockStore fallback)
+async function findOAuthAccount(provider, providerUserId) {
+  try {
+    const res = await query(
+      'SELECT * FROM oauth_accounts WHERE provider = $1 AND provider_user_id = $2',
+      [provider, providerUserId]
+    );
+    if (res && res.rows && res.rows.length > 0) {
+      return res.rows[0];
+    }
+  } catch (err) {}
+  return mockStore.findOAuthAccount(provider, providerUserId);
+}
+
+// Helper: Create new refresh token session in Redis
+async function createRefreshSession(userId, res) {
+  const rawRefreshToken = generateRefreshToken();
+  const tokenHash = hashToken(rawRefreshToken);
+  const ttlSeconds = 7 * 24 * 60 * 60; // 7 days
+
+  // Store refresh:<hash> -> userId
+  await redis.set(`refresh:${tokenHash}`, userId, ttlSeconds);
+
+  // Track in user_refresh:<userId> list for revocation on password reset
+  const userTokens = (await redis.get(`user_refresh:${userId}`)) || [];
+  if (Array.isArray(userTokens)) {
+    userTokens.push(tokenHash);
+    await redis.set(`user_refresh:${userId}`, userTokens, ttlSeconds);
+  } else {
+    await redis.set(`user_refresh:${userId}`, [tokenHash], ttlSeconds);
+  }
+
+  // Set httpOnly cookie
+  res.cookie('refreshToken', rawRefreshToken, {
+    httpOnly: true,
+    secure: config.app.env === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+
+  return rawRefreshToken;
+}
+
+// Helper: Invalidate all refresh tokens for a user
+async function invalidateUserRefreshTokens(userId) {
+  const userTokens = (await redis.get(`user_refresh:${userId}`)) || [];
+  if (Array.isArray(userTokens)) {
+    for (const h of userTokens) {
+      await redis.del(`refresh:${h}`);
+    }
+  }
+  await redis.del(`user_refresh:${userId}`);
+}
+
+// ==========================================
+// 1. POST /auth/signup
+// ==========================================
+export async function signup(req, res, next) {
+  try {
+    const { name, email, password } = req.body;
     const emailClean = email.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailClean)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid Email',
-        message: 'Please provide a valid email address.',
-      });
-    }
-
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        error: 'Weak Password',
-        message: 'Password must be at least 8 characters long.',
-      });
-    }
 
     // Check if user already exists
-    let existingUser = null;
-    const dbCheck = await query('SELECT id, email FROM users WHERE email = $1', [emailClean]);
-    if (dbCheck && dbCheck.rows && dbCheck.rows.length > 0) {
-      existingUser = dbCheck.rows[0];
-    } else {
-      existingUser = mockStore.findUserByEmail(emailClean);
-    }
-
+    const existingUser = await findUserByEmail(emailClean);
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        error: 'User Already Exists',
-        message: 'An account with this email address already exists. Please sign in instead.',
+        error: 'USER_EXISTS',
+        message: 'An account with this email address already exists. Please sign in.',
       });
     }
 
-    // Hash password with Argon2id
+    // Hash with argon2
     const passwordHash = await hashPassword(password);
 
-    // Create user record
+    // Insert user
     let newUser = null;
-    const insertRes = await query(
-      `INSERT INTO users (email, password_hash, name, email_verified, created_at, updated_at)
-       VALUES ($1, $2, $3, false, NOW(), NOW())
-       RETURNING id, email, name, email_verified, mfa_enabled, created_at`,
-      [emailClean, passwordHash, name.trim()]
-    );
+    try {
+      const insertRes = await query(
+        `INSERT INTO users (email, full_name, password_hash, email_verified, created_at, updated_at)
+         VALUES ($1, $2, $3, false, NOW(), NOW())
+         RETURNING id, email, full_name, email_verified, avatar_url, created_at`,
+        [emailClean, name.trim(), passwordHash]
+      );
+      if (insertRes && insertRes.rows && insertRes.rows.length > 0) {
+        newUser = insertRes.rows[0];
+      }
+    } catch (err) {}
 
-    if (insertRes && insertRes.rows && insertRes.rows.length > 0) {
-      newUser = insertRes.rows[0];
-    } else {
+    if (!newUser) {
       newUser = mockStore.saveUser({
         email: emailClean,
-        password_hash: passwordHash,
+        full_name: name.trim(),
         name: name.trim(),
+        password_hash: passwordHash,
         email_verified: false,
       });
     }
 
-    // Generate email verification token (24h expiry)
-    const verificationToken = generateVerificationToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // Generate random verification token (32 bytes)
+    const rawToken = generateVerificationToken();
+    const tokenHash = hashToken(rawToken);
 
-    await query(
-      `INSERT INTO verification_tokens (user_id, token, type, expires_at)
-       VALUES ($1, $2, 'email_verify', $3)`,
-      [newUser.id, verificationToken, expiresAt]
-    );
-    mockStore.saveToken({
-      user_id: newUser.id,
-      token: verificationToken,
-      type: 'email_verify',
-      expires_at: expiresAt.toISOString(),
-    });
+    // Store in Redis key verify:<hash> with 24h TTL (86400 seconds)
+    await redis.set(`verify:${tokenHash}`, newUser.id, 24 * 60 * 60);
 
-    // Send verification email
+    // Send verification email (or print link in console in development mode)
     await sendVerificationEmail({
       to: newUser.email,
-      name: newUser.name,
-      token: verificationToken,
+      name: newUser.full_name || name.trim(),
+      token: rawToken,
     });
 
+    // Respond 201 with generic message
     return res.status(201).json({
       success: true,
-      message: 'Account created successfully! Please check your email to verify your account.',
+      message: 'Account created! Please check your email to verify your account.',
       data: {
         userId: newUser.id,
         email: newUser.email,
-        name: newUser.name,
-        emailVerified: false,
-        // In dev environment, return token for instant testing
-        debugVerificationToken: config.nodeEnv === 'development' ? verificationToken : undefined,
+        full_name: newUser.full_name,
       },
     });
   } catch (err) {
-    console.error('[Signup Error]:', err);
-    return res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: 'An unexpected error occurred during signup. Please try again.',
-    });
+    next(err);
   }
 }
 
 // ==========================================
-// 2. Login (POST /api/v1/auth/login)
+// 2. POST /auth/verify-email
 // ==========================================
-export async function login(req, res) {
+export async function verifyEmail(req, res, next) {
   try {
-    const { email, password, mfaCode } = req.body;
-
-    if (!email || !password) {
+    const { token } = req.body;
+    if (!token) {
       return res.status(400).json({
         success: false,
-        error: 'Validation Error',
-        message: 'Email and password are required.',
+        error: 'INVALID_TOKEN',
+        message: 'Verification token is required.',
       });
     }
 
+    // Hash token to look up in Redis
+    const tokenHash = hashToken(token);
+    const userId = await redis.get(`verify:${tokenHash}`);
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'EXPIRED_OR_INVALID_TOKEN',
+        message: 'This verification link is invalid or has expired. Please request a new one.',
+      });
+    }
+
+    // Update user email_verified = true
+    try {
+      await query('UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1', [userId]);
+    } catch (err) {}
+
+    mockStore.updateUser(userId, { email_verified: true });
+
+    // Delete token from Redis
+    await redis.del(`verify:${tokenHash}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email verified successfully! You can now log in to your account.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ==========================================
+// 3. POST /auth/resend-verification
+// ==========================================
+export async function resendVerification(req, res, next) {
+  try {
+    const { email } = req.body;
     const emailClean = email.trim().toLowerCase();
 
-    // Fetch user
-    let user = null;
-    const dbRes = await query('SELECT * FROM users WHERE email = $1', [emailClean]);
-    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-      user = dbRes.rows[0];
-    } else {
-      user = mockStore.findUserByEmail(emailClean);
-    }
+    const user = await findUserByEmail(emailClean);
+    if (user && !user.email_verified) {
+      const rawToken = generateVerificationToken();
+      const tokenHash = hashToken(rawToken);
 
-    if (!user || !user.password_hash) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid Credentials',
-        message: 'Invalid email or password. Please try again.',
+      await redis.set(`verify:${tokenHash}`, user.id, 24 * 60 * 60);
+
+      await sendVerificationEmail({
+        to: user.email,
+        name: user.full_name || 'Developer',
+        token: rawToken,
       });
     }
 
-    // Verify Argon2id password hash
-    const isPasswordValid = await verifyPassword(password, user.password_hash);
-    if (!isPasswordValid) {
-      return res.status(401).json({
+    // Always return the same response to prevent email enumeration
+    return res.status(200).json({
+      success: true,
+      message: 'If an unverified account exists with this email, a verification link has been sent.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ==========================================
+// 4. POST /auth/login
+// ==========================================
+export async function login(req, res, next) {
+  try {
+    const { email, password } = req.body;
+    const emailClean = email.trim().toLowerCase();
+
+    const user = await findUserByEmail(emailClean);
+
+    // Same error message for wrong email and wrong password
+    const genericInvalidError = {
+      success: false,
+      error: 'INVALID_CREDENTIALS',
+      message: 'Invalid email or password.',
+    };
+
+    if (!user) {
+      return res.status(401).json(genericInvalidError);
+    }
+
+    // If the user has no password_hash (Google-only user)
+    if (!user.password_hash) {
+      return res.status(400).json({
         success: false,
-        error: 'Invalid Credentials',
-        message: 'Invalid email or password. Please try again.',
+        error: 'GOOGLE_AUTH_ONLY',
+        message: 'This account was created with Google. Please use Google sign-in or reset your password.',
       });
+    }
+
+    // Verify password with argon2
+    const passwordMatch = await verifyPassword(password, user.password_hash);
+    if (!passwordMatch) {
+      return res.status(401).json(genericInvalidError);
     }
 
     // Check email verification status
     if (!user.email_verified) {
       return res.status(403).json({
         success: false,
-        error: 'Email Not Verified',
+        error: 'EMAIL_NOT_VERIFIED',
         message: 'Please verify your email address before signing in.',
-        emailVerified: false,
-        email: user.email,
       });
     }
 
-    // Check Multi-Factor Authentication (MFA)
-    if (user.mfa_enabled) {
-      if (!mfaCode) {
-        return res.status(200).json({
-          success: true,
-          mfaRequired: true,
-          message: 'Two-factor authentication code required.',
-          tempSessionId: user.id,
-        });
-      }
-
-      const isTotpValid = verifyTotpCode(user.mfa_secret, mfaCode);
-      if (!isTotpValid) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid MFA Code',
-          message: 'The 6-digit authentication code is invalid or expired. Try 123456 in dev.',
-        });
-      }
-    }
-
-    // Issue 15-minute JWT Access Token
+    // Generate access token (15 minutes)
     const accessToken = generateAccessToken(user);
 
-    // Issue 7-day Refresh Token
-    const refreshTokenData = generateRefreshToken(user.id);
-    await query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
-       VALUES ($1, $2, $3)`,
-      [user.id, refreshTokenData.tokenHash, refreshTokenData.expiresAt]
-    );
-    mockStore.saveRefreshToken({
-      user_id: user.id,
-      token_hash: refreshTokenData.tokenHash,
-      expires_at: refreshTokenData.expiresAt.toISOString(),
-      revoked: false,
-    });
-
-    // Set secure HTTP-only refresh token cookie
-    res.cookie('hind_refresh_token', refreshTokenData.rawToken, {
-      httpOnly: true,
-      secure: config.nodeEnv === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/api/v1/auth',
-    });
+    // Create rotated refresh session and set httpOnly cookie (7 days)
+    await createRefreshSession(user.id, res);
 
     return res.status(200).json({
       success: true,
-      message: 'Login successful!',
+      message: 'Login successful.',
       data: {
         accessToken,
-        expiresIn: 900, // 15 minutes (in seconds)
         user: {
           id: user.id,
           email: user.email,
-          name: user.name,
-          emailVerified: user.email_verified,
-          mfaEnabled: user.mfa_enabled,
-          role: user.role || 'developer',
+          full_name: user.full_name || user.name,
+          avatar_url: user.avatar_url,
         },
       },
     });
   } catch (err) {
-    console.error('[Login Error]:', err);
-    return res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: 'An unexpected error occurred during login. Please try again.',
-    });
+    next(err);
   }
 }
 
 // ==========================================
-// 3. Verify Email (POST /api/v1/auth/verify-email)
+// 5. POST /auth/refresh
 // ==========================================
-export async function verifyEmail(req, res) {
+export async function refresh(req, res, next) {
   try {
-    const { token } = req.body;
-
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        error: 'Token Required',
-        message: 'Verification token is required.',
-      });
-    }
-
-    // Find token in database or mock store
-    let tokenRecord = null;
-    const dbToken = await query(
-      `SELECT * FROM verification_tokens 
-       WHERE token = $1 AND type = 'email_verify' AND expires_at > NOW() AND used_at IS NULL`,
-      [token]
-    );
-
-    if (dbToken && dbToken.rows && dbToken.rows.length > 0) {
-      tokenRecord = dbToken.rows[0];
-    } else {
-      tokenRecord = mockStore.findToken(token, 'email_verify');
-    }
-
-    if (!tokenRecord) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid or Expired Token',
-        message: 'This email verification link is invalid or has expired. Please request a new one.',
-      });
-    }
-
-    // Mark user email as verified
-    await query('UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1', [tokenRecord.user_id]);
-    await query('UPDATE verification_tokens SET used_at = NOW() WHERE token = $1', [token]);
-    mockStore.updateUser(tokenRecord.user_id, { email_verified: true });
-    mockStore.deleteToken(token);
-
-    const user = mockStore.findUserById(tokenRecord.user_id);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Email address verified successfully! You can now access your Hind DB console.',
-      data: {
-        userId: tokenRecord.user_id,
-        email: user?.email,
-        emailVerified: true,
-      },
-    });
-  } catch (err) {
-    console.error('[Verify Email Error]:', err);
-    return res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: 'Failed to verify email address. Please try again.',
-    });
-  }
-}
-
-// ==========================================
-// 4. Forgot Password (POST /api/v1/auth/forgot-password)
-// ==========================================
-export async function forgotPassword(req, res) {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email Required',
-        message: 'Please provide your account email address.',
-      });
-    }
-
-    const emailClean = email.trim().toLowerCase();
-
-    // Look up user
-    let user = null;
-    const dbRes = await query('SELECT id, email, name FROM users WHERE email = $1', [emailClean]);
-    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-      user = dbRes.rows[0];
-    } else {
-      user = mockStore.findUserByEmail(emailClean);
-    }
-
-    // For security, always return success message even if email not registered
-    if (!user) {
-      return res.status(200).json({
-        success: true,
-        message: 'If an account with this email exists, a password reset link has been sent.',
-      });
-    }
-
-    // Generate reset token (1 hour expiry)
-    const resetToken = generateVerificationToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-
-    await query(
-      `INSERT INTO verification_tokens (user_id, token, type, expires_at)
-       VALUES ($1, $2, 'password_reset', $3)`,
-      [user.id, resetToken, expiresAt]
-    );
-    mockStore.saveToken({
-      user_id: user.id,
-      token: resetToken,
-      type: 'password_reset',
-      expires_at: expiresAt.toISOString(),
-    });
-
-    // Send reset email
-    await sendPasswordResetEmail({
-      to: user.email,
-      name: user.name,
-      token: resetToken,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: 'If an account with this email exists, a password reset link has been sent.',
-      debugResetToken: config.nodeEnv === 'development' ? resetToken : undefined,
-    });
-  } catch (err) {
-    console.error('[Forgot Password Error]:', err);
-    return res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: 'Failed to process password reset request. Please try again.',
-    });
-  }
-}
-
-// ==========================================
-// 5. Reset Password (POST /api/v1/auth/reset-password)
-// ==========================================
-export async function resetPassword(req, res) {
-  try {
-    const { token, newPassword } = req.body;
-
-    if (!token || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        error: 'Validation Error',
-        message: 'Reset token and new password are required.',
-      });
-    }
-
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        success: false,
-        error: 'Weak Password',
-        message: 'New password must be at least 8 characters long.',
-      });
-    }
-
-    // Find and validate token
-    let tokenRecord = null;
-    const dbToken = await query(
-      `SELECT * FROM verification_tokens 
-       WHERE token = $1 AND type = 'password_reset' AND expires_at > NOW() AND used_at IS NULL`,
-      [token]
-    );
-
-    if (dbToken && dbToken.rows && dbToken.rows.length > 0) {
-      tokenRecord = dbToken.rows[0];
-    } else {
-      tokenRecord = mockStore.findToken(token, 'password_reset');
-    }
-
-    if (!tokenRecord) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid or Expired Token',
-        message: 'This password reset link is invalid or has expired. Please request a new one.',
-      });
-    }
-
-    // Hash new password with Argon2id
-    const newPasswordHash = await hashPassword(newPassword);
-
-    // Update user password and invalidate token
-    await query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [newPasswordHash, tokenRecord.user_id]);
-    await query('UPDATE verification_tokens SET used_at = NOW() WHERE token = $1', [token]);
-    // Invalidate existing refresh tokens for security
-    await query('UPDATE refresh_tokens SET revoked = true WHERE user_id = $1', [tokenRecord.user_id]);
-
-    mockStore.updateUser(tokenRecord.user_id, { password_hash: newPasswordHash });
-    mockStore.deleteToken(token);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Your password has been successfully reset! You can now log in with your new credentials.',
-    });
-  } catch (err) {
-    console.error('[Reset Password Error]:', err);
-    return res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: 'Failed to reset password. Please try again.',
-    });
-  }
-}
-
-// ==========================================
-// 6. OAuth Google (GET /api/v1/auth/oauth/google)
-// ==========================================
-export async function oauthGoogle(req, res) {
-  const { code, mock } = req.query;
-
-  // Mock / Instant Sandbox OAuth flow for preview & quick testing
-  if (mock || !code) {
-    const mockEmail = req.query.email || 'developer@hind.io';
-    const mockName = req.query.name || 'Hind Sovereign Developer';
-    
-    let user = mockStore.findUserByEmail(mockEmail);
-    if (!user) {
-      user = mockStore.saveUser({
-        email: mockEmail,
-        name: mockName,
-        email_verified: true,
-        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
-      });
-    }
-
-    const accessToken = generateAccessToken(user);
-    const refreshTokenData = generateRefreshToken(user.id);
-    mockStore.saveRefreshToken({
-      user_id: user.id,
-      token_hash: refreshTokenData.tokenHash,
-      expires_at: refreshTokenData.expiresAt.toISOString(),
-      revoked: false,
-    });
-
-    res.cookie('hind_refresh_token', refreshTokenData.rawToken, {
-      httpOnly: true,
-      secure: config.nodeEnv === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/api/v1/auth',
-    });
-
-    return res.redirect(`${config.appUrl}/dashboard/overview?token=${accessToken}`);
-  }
-
-  // Live Google OAuth 2.0 Token Exchange
-  try {
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: config.oauth.google.clientId,
-        client_secret: config.oauth.google.clientSecret,
-        redirect_uri: config.oauth.google.redirectUri,
-        grant_type: 'authorization_code',
-      }),
-    });
-
-    const tokenData = await tokenRes.json();
-    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
-    const profile = await userRes.json();
-
-    let user = mockStore.findUserByEmail(profile.email);
-    if (!user) {
-      user = mockStore.saveUser({
-        email: profile.email,
-        name: profile.name || profile.email.split('@')[0],
-        email_verified: true,
-        avatar_url: profile.picture,
-      });
-    }
-
-    const accessToken = generateAccessToken(user);
-    return res.redirect(`${config.appUrl}/dashboard/overview?token=${accessToken}`);
-  } catch (err) {
-    return res.redirect(`${config.appUrl}/login?error=oauth_failed`);
-  }
-}
-
-// ==========================================
-// 7. OAuth GitHub (GET /api/v1/auth/oauth/github)
-// ==========================================
-export async function oauthGithub(req, res) {
-  const { code, mock } = req.query;
-
-  // Mock / Sandbox OAuth for development
-  if (mock || !code) {
-    const mockEmail = req.query.email || 'github.dev@hind.io';
-    const mockName = req.query.name || 'GitHub OpenSource Builder';
-
-    let user = mockStore.findUserByEmail(mockEmail);
-    if (!user) {
-      user = mockStore.saveUser({
-        email: mockEmail,
-        name: mockName,
-        email_verified: true,
-        avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
-      });
-    }
-
-    const accessToken = generateAccessToken(user);
-    const refreshTokenData = generateRefreshToken(user.id);
-    mockStore.saveRefreshToken({
-      user_id: user.id,
-      token_hash: refreshTokenData.tokenHash,
-      expires_at: refreshTokenData.expiresAt.toISOString(),
-      revoked: false,
-    });
-
-    res.cookie('hind_refresh_token', refreshTokenData.rawToken, {
-      httpOnly: true,
-      secure: config.nodeEnv === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/api/v1/auth',
-    });
-
-    return res.redirect(`${config.appUrl}/dashboard/overview?token=${accessToken}`);
-  }
-
-  // Live GitHub OAuth Token Exchange
-  try {
-    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: config.oauth.github.clientId,
-        client_secret: config.oauth.github.clientSecret,
-        code,
-      }),
-    });
-
-    const tokenData = await tokenRes.json();
-    const userRes = await fetch('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
-    const profile = await userRes.json();
-
-    const email = profile.email || `${profile.login}@users.noreply.github.com`;
-    let user = mockStore.findUserByEmail(email);
-    if (!user) {
-      user = mockStore.saveUser({
-        email,
-        name: profile.name || profile.login,
-        email_verified: true,
-        avatar_url: profile.avatar_url,
-      });
-    }
-
-    const accessToken = generateAccessToken(user);
-    return res.redirect(`${config.appUrl}/dashboard/overview?token=${accessToken}`);
-  } catch (err) {
-    return res.redirect(`${config.appUrl}/login?error=oauth_failed`);
-  }
-}
-
-// ==========================================
-// 8. Refresh Token (POST /api/v1/auth/refresh)
-// ==========================================
-export async function refresh(req, res) {
-  try {
-    const rawRefreshToken = req.cookies?.hind_refresh_token || req.body?.refreshToken;
-
+    const rawRefreshToken = req.cookies?.refreshToken;
     if (!rawRefreshToken) {
       return res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'No refresh token provided in HTTP-only cookie.',
+        error: 'UNAUTHORIZED',
+        message: 'Refresh token cookie is missing.',
       });
     }
 
     const tokenHash = hashToken(rawRefreshToken);
+    const userId = await redis.get(`refresh:${tokenHash}`);
 
-    // Look up token
-    let tokenRec = null;
-    const dbToken = await query(
-      'SELECT * FROM refresh_tokens WHERE token_hash = $1 AND revoked = false AND expires_at > NOW()',
-      [tokenHash]
-    );
-
-    if (dbToken && dbToken.rows && dbToken.rows.length > 0) {
-      tokenRec = dbToken.rows[0];
-    } else {
-      tokenRec = mockStore.findRefreshToken(tokenHash);
-    }
-
-    if (!tokenRec || tokenRec.revoked) {
+    if (!userId) {
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: config.app.env === 'production',
+        sameSite: 'lax',
+        path: '/',
+      });
       return res.status(401).json({
         success: false,
-        error: 'Invalid Refresh Token',
-        message: 'Session has expired or was revoked. Please log in again.',
+        error: 'UNAUTHORIZED',
+        message: 'Invalid or expired session. Please log in again.',
       });
     }
 
-    // Load user
-    let user = null;
-    const dbUser = await query('SELECT * FROM users WHERE id = $1', [tokenRec.user_id]);
-    if (dbUser && dbUser.rows && dbUser.rows.length > 0) {
-      user = dbUser.rows[0];
-    } else {
-      user = mockStore.findUserById(tokenRec.user_id);
-    }
-
+    const user = await findUserById(userId);
     if (!user) {
+      await redis.del(`refresh:${tokenHash}`);
       return res.status(401).json({
         success: false,
-        error: 'User Not Found',
-        message: 'User account no longer exists.',
+        error: 'UNAUTHORIZED',
+        message: 'User account not found.',
       });
     }
 
-    // Issue new 15m access token
+    // Invalidate the old refresh token (Token Rotation)
+    await redis.del(`refresh:${tokenHash}`);
+
+    // Clean old hash from user_refresh list
+    const userTokens = (await redis.get(`user_refresh:${userId}`)) || [];
+    if (Array.isArray(userTokens)) {
+      const filtered = userTokens.filter((h) => h !== tokenHash);
+      await redis.set(`user_refresh:${userId}`, filtered, 7 * 24 * 60 * 60);
+    }
+
+    // Issue rotated refresh token and set new cookie
+    await createRefreshSession(user.id, res);
+
+    // Generate new 15-minute access token
     const newAccessToken = generateAccessToken(user);
 
     return res.status(200).json({
       success: true,
       data: {
         accessToken: newAccessToken,
-        expiresIn: 900, // 15 minutes
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name || user.name,
+          avatar_url: user.avatar_url,
+        },
       },
     });
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: 'Failed to refresh token.',
-    });
+    next(err);
   }
 }
 
 // ==========================================
-// 9. Logout (POST /api/v1/auth/logout)
+// 6. POST /auth/logout
 // ==========================================
-export async function logout(req, res) {
+export async function logout(req, res, next) {
   try {
-    const rawRefreshToken = req.cookies?.hind_refresh_token;
+    const rawRefreshToken = req.cookies?.refreshToken;
     if (rawRefreshToken) {
       const tokenHash = hashToken(rawRefreshToken);
-      await query('UPDATE refresh_tokens SET revoked = true WHERE token_hash = $1', [tokenHash]);
-      mockStore.revokeRefreshToken(tokenHash);
+      await redis.del(`refresh:${tokenHash}`);
     }
 
-    res.clearCookie('hind_refresh_token', { path: '/api/v1/auth' });
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: config.app.env === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
 
     return res.status(200).json({
       success: true,
       message: 'Logged out successfully.',
     });
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to log out.',
-    });
+    next(err);
   }
 }
 
 // ==========================================
-// 10. Get Current User Profile (GET /api/v1/auth/me)
+// 7. GET /auth/me
 // ==========================================
 export async function getMe(req, res) {
   return res.status(200).json({
     success: true,
     data: {
-      user: req.user,
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        full_name: req.user.full_name || req.user.name,
+        avatar_url: req.user.avatar_url,
+      },
     },
   });
+}
+
+// ==========================================
+// 8. POST /auth/forgot-password
+// ==========================================
+export async function forgotPassword(req, res, next) {
+  try {
+    const { email } = req.body;
+    const emailClean = email.trim().toLowerCase();
+
+    const user = await findUserByEmail(emailClean);
+    if (user) {
+      const rawToken = generateRandomToken(32);
+      const tokenHash = hashToken(rawToken);
+
+      // Store in Redis with 1h TTL (3600 seconds)
+      await redis.set(`reset:${tokenHash}`, user.id, 3600);
+
+      await sendPasswordResetEmail({
+        to: user.email,
+        name: user.full_name || 'Developer',
+        token: rawToken,
+      });
+    }
+
+    // Always return the exact same response to prevent email enumeration
+    return res.status(200).json({
+      success: true,
+      message: 'If an account exists with this email, a password reset link has been sent.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ==========================================
+// 9. POST /auth/reset-password
+// ==========================================
+export async function resetPassword(req, res, next) {
+  try {
+    const { token, password } = req.body;
+    const tokenHash = hashToken(token);
+
+    const userId = await redis.get(`reset:${tokenHash}`);
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_OR_EXPIRED_TOKEN',
+        message: 'Password reset link is invalid or has expired. Please request a new one.',
+      });
+    }
+
+    const newHash = await hashPassword(password);
+
+    // Update in DB or mockStore
+    try {
+      await query(
+        'UPDATE users SET password_hash = $1, email_verified = true, updated_at = NOW() WHERE id = $2',
+        [newHash, userId]
+      );
+    } catch (err) {}
+
+    mockStore.updateUser(userId, {
+      password_hash: newHash,
+      email_verified: true,
+    });
+
+    // Delete single-use reset token from Redis
+    await redis.del(`reset:${tokenHash}`);
+
+    // Invalidate that user's existing refresh tokens
+    await invalidateUserRefreshTokens(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Your password has been successfully reset! Please log in with your new password.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ==========================================
+// 10. GET /auth/google
+// ==========================================
+export async function googleAuth(req, res, next) {
+  try {
+    // Generate random state (16 bytes)
+    const state = generateRandomToken(16);
+
+    // Store in Redis for 10 minutes (600s)
+    await redis.set(`google_state:${state}`, 'active', 600);
+
+    const consentUrl = generateGoogleAuthUrl(state);
+    return res.redirect(consentUrl);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ==========================================
+// 11. GET /auth/google/callback
+// ==========================================
+export async function googleCallback(req, res, next) {
+  const frontendUrl = config.app.frontendUrl.replace(/\/$/, '');
+  try {
+    const { code, state, error } = req.query;
+
+    if (error || !code || !state) {
+      return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+    }
+
+    // Validate and delete state with getdel
+    const validState = await redis.getdel(`google_state:${state}`);
+    if (!validState) {
+      return res.redirect(`${frontendUrl}/login?error=invalid_oauth_state`);
+    }
+
+    // Exchange code and verify ID token with google-auth-library
+    let googleProfile;
+    try {
+      googleProfile = await verifyGoogleAuthCode(code);
+    } catch (oauthErr) {
+      console.error('[Google OAuth Error]: Failed code exchange:', oauthErr.message);
+      return res.redirect(`${frontendUrl}/login?error=google_verification_failed`);
+    }
+
+    // Never link accounts when Google email_verified is false
+    if (!googleProfile.email_verified) {
+      return res.redirect(`${frontendUrl}/login?error=google_email_unverified`);
+    }
+
+    let user = null;
+
+    // (a) oauth_accounts match, login
+    const existingOAuth = await findOAuthAccount('google', googleProfile.sub);
+    if (existingOAuth) {
+      user = await findUserById(existingOAuth.user_id);
+    }
+
+    // (b) same email exists and Google email_verified is true, link the account
+    if (!user) {
+      const existingEmailUser = await findUserByEmail(googleProfile.email.toLowerCase());
+      if (existingEmailUser) {
+        user = existingEmailUser;
+        // Link to oauth_accounts
+        try {
+          await query(
+            `INSERT INTO oauth_accounts (user_id, provider, provider_user_id, created_at)
+             VALUES ($1, 'google', $2, NOW())
+             ON CONFLICT (provider, provider_user_id) DO NOTHING`,
+            [user.id, googleProfile.sub]
+          );
+        } catch (e) {}
+
+        mockStore.saveOAuthAccount({
+          user_id: user.id,
+          provider: 'google',
+          provider_user_id: googleProfile.sub,
+        });
+
+        // Ensure email_verified is true
+        if (!user.email_verified) {
+          try {
+            await query('UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1', [user.id]);
+          } catch (e) {}
+          mockStore.updateUser(user.id, { email_verified: true });
+        }
+      }
+    }
+
+    // (c) otherwise create a new user with email_verified=true and password_hash=null
+    if (!user) {
+      try {
+        const insertUser = await query(
+          `INSERT INTO users (email, full_name, password_hash, email_verified, avatar_url, created_at, updated_at)
+           VALUES ($1, $2, null, true, $3, NOW(), NOW())
+           RETURNING *`,
+          [googleProfile.email.toLowerCase(), googleProfile.full_name, googleProfile.avatar_url]
+        );
+        if (insertUser && insertUser.rows && insertUser.rows.length > 0) {
+          user = insertUser.rows[0];
+        }
+      } catch (e) {}
+
+      if (!user) {
+        user = mockStore.saveUser({
+          email: googleProfile.email.toLowerCase(),
+          full_name: googleProfile.full_name,
+          name: googleProfile.full_name,
+          password_hash: null,
+          email_verified: true,
+          avatar_url: googleProfile.avatar_url,
+        });
+      }
+
+      // Record in oauth_accounts
+      try {
+        await query(
+          `INSERT INTO oauth_accounts (user_id, provider, provider_user_id, created_at)
+           VALUES ($1, 'google', $2, NOW())`,
+          [user.id, googleProfile.sub]
+        );
+      } catch (e) {}
+
+      mockStore.saveOAuthAccount({
+        user_id: user.id,
+        provider: 'google',
+        provider_user_id: googleProfile.sub,
+      });
+    }
+
+    // Set the refresh cookie (7 days)
+    await createRefreshSession(user.id, res);
+
+    // Redirect to FRONTEND_URL/dashboard
+    return res.redirect(`${frontendUrl}/dashboard`);
+  } catch (err) {
+    console.error('[Google Callback Fatal]:', err);
+    return res.redirect(`${frontendUrl}/login?error=server_error`);
+  }
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { useAuth } from '../context/AuthContext';
-import { Mail, ArrowRight, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowRight, CheckCircle2, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 
 interface ForgotPasswordPageProps {
   onNavigate: (page: string) => void;
@@ -13,20 +13,22 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onNaviga
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [resetToken, setResetToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
 
     try {
       const res = await forgotPassword(email);
-      setSubmitted(true);
-      if (res.data?.debugResetToken) {
-        setResetToken(res.data.debugResetToken);
+      if (res.success) {
+        setSubmitted(true);
+      } else {
+        setError(res.message || 'Failed to request password reset. Please try again.');
       }
-    } catch (err) {
-      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -38,47 +40,48 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onNaviga
       subtitle={
         submitted
           ? `We have sent password reset instructions to ${email}`
-          : 'Enter the email address associated with your account and we’ll send you a link to reset your password.'
+          : 'Enter your email address and we will send you a secure link to reset your password.'
       }
       onBackToHome={() => onNavigate('home')}
     >
+      {/* Error Banner */}
+      {error && (
+        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+          <div className="leading-snug">{error}</div>
+        </div>
+      )}
+
       {submitted ? (
         <div className="text-center py-2 space-y-6">
           <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-200 text-emerald-600 mx-auto flex items-center justify-center shadow-sm">
             <CheckCircle2 className="w-8 h-8" />
           </div>
 
-          <p className="text-xs text-[#475569] leading-relaxed">
-            Click the link in the email to choose a new password. The link will remain valid for 60 minutes.
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-[#0F172A]">
+              Password Reset Link Dispatched
+            </p>
+            <p className="text-xs text-[#475569] leading-relaxed">
+              If an account is associated with <strong className="text-[#0F172A]">{email}</strong>, you will receive an email shortly with instructions to reset your password. The link is valid for 1 hour.
+            </p>
+          </div>
 
-          {/* Quick Demo Reset Trigger Button */}
-          <button
-            onClick={() => {
-              sessionStorage.setItem('hind_reset_token', resetToken || 'demo_reset_tok');
-              onNavigate('reset-password');
-            }}
-            className="btn-primary-blue w-full py-3.5 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span>Click to Open Reset Password Page</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-
-          <div className="pt-4 border-t border-[#E2E8F0]">
+          <div className="pt-4 space-y-3">
             <button
               onClick={() => onNavigate('login')}
-              className="text-xs font-semibold text-[#1E3A8A] hover:underline flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+              className="btn-primary-blue w-full py-3 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-950/10"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to login</span>
+              <span>Back to Sign in</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-[#0F172A] mb-1.5 font-sans">
-              Email Address
+              Work Email Address
             </label>
             <div className="relative">
               <input
@@ -89,27 +92,36 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onNaviga
                 placeholder="developer@company.in"
                 className="w-full px-4 py-3 pl-11 rounded-2xl bg-[#F8FAFC] border border-[#CBD5E1] focus:border-[#1E3A8A] focus:bg-white text-sm text-[#0F172A] outline-none transition-all placeholder:text-slate-400"
               />
-              <Mail className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4 h-4 text-[#94A3B8] absolute left-4 top-1/2 -translate-y-1/2" />
             </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary-blue w-full py-3.5 text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="btn-primary-blue w-full py-3.5 text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
           >
-            <span>{loading ? 'Sending link...' : 'Send reset link'}</span>
-            <ArrowRight className="w-4 h-4" />
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Sending instructions...</span>
+              </>
+            ) : (
+              <>
+                <span>Send Reset Link</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
 
-          <div className="pt-4 border-t border-[#E2E8F0] text-center">
+          <div className="pt-4 text-center">
             <button
               type="button"
               onClick={() => onNavigate('login')}
-              className="text-xs font-semibold text-[#475569] hover:text-[#0F172A] flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs text-[#475569] hover:text-[#1E3A8A] font-semibold transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to login</span>
+              <span>Return to sign in</span>
             </button>
           </div>
         </form>

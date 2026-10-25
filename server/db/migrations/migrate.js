@@ -20,6 +20,10 @@ async function runMigrations() {
   const client = await pool.connect();
   try {
     if (direction === 'down') {
+      if (fs.existsSync(path.join(__dirname, '003_rollback_auth_schema.sql'))) {
+        const rollbackAuthSql = fs.readFileSync(path.join(__dirname, '003_rollback_auth_schema.sql'), 'utf-8');
+        await client.query(rollbackAuthSql);
+      }
       const rollbackSql = fs.readFileSync(path.join(__dirname, '001_rollback_schema.sql'), 'utf-8');
       await client.query(rollbackSql);
       console.log('[Hind DB Migrations]: Rollback completed successfully.');
@@ -32,6 +36,12 @@ async function runMigrations() {
 
       console.log('[Hind DB Migrations]: Applying 002_seed_data.sql...');
       await client.query(seedSql);
+
+      if (fs.existsSync(path.join(__dirname, '003_auth_schema.sql'))) {
+        console.log('[Hind DB Migrations]: Applying 003_auth_schema.sql...');
+        const authSql = fs.readFileSync(path.join(__dirname, '003_auth_schema.sql'), 'utf-8');
+        await client.query(authSql);
+      }
 
       console.log('[Hind DB Migrations]: All migrations applied successfully!');
     }

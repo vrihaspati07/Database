@@ -3,10 +3,11 @@ import { Database, Menu, X, ArrowRight } from 'lucide-react';
 
 interface NavbarProps {
   onOpenLogin: () => void;
+  onOpenSignup?: () => void;
   onOpenDemo?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenLogin }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenLogin, onOpenSignup }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
@@ -56,7 +57,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenLogin }) => {
 
           {/* Get Started CTA (filled, blue #1E3A8A) */}
           <a
-            href="#pricing"
+            href="/signup"
+            onClick={(e) => {
+              if (onOpenSignup) {
+                e.preventDefault();
+                onOpenSignup();
+              }
+            }}
             className="btn-primary-blue inline-flex items-center gap-2 px-5 py-2 text-sm cursor-pointer"
           >
             <span>Get Started</span>
@@ -103,8 +110,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenLogin }) => {
                 Login
               </button>
               <a
-                href="#pricing"
-                onClick={() => setMobileMenuOpen(false)}
+                href="/signup"
+                onClick={(e) => {
+                  setMobileMenuOpen(false);
+                  if (onOpenSignup) {
+                    e.preventDefault();
+                    onOpenSignup();
+                  }
+                }}
                 className="btn-primary-blue w-full py-2.5 text-center text-sm inline-flex items-center justify-center gap-2"
               >
                 <span>Get Started</span>

@@ -15,11 +15,13 @@ import { SignupPage } from './pages/SignupPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { DashboardPlaceholder } from './pages/DashboardPlaceholder';
 import { DashboardContainer } from './pages/DashboardContainer';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
-  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'signup' | 'verify-email' | 'forgot-password' | 'reset-password' | 'dashboard'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'signup' | 'verify-email' | 'forgot-password' | 'reset-password' | 'dashboard' | 'console'>('home');
   const [dashboardTab, setDashboardTab] = useState<string>('overview');
   const [demoModalOpen, setDemoModalOpen] = useState(false);
 
@@ -36,12 +38,13 @@ function AppContent() {
         setCurrentPage('dashboard');
         const parts = path.split('/');
         if (parts[1]) setDashboardTab(parts[1]);
+      } else if (path === 'console') {
+        setCurrentPage('console');
       } else {
         setCurrentPage('home');
       }
     };
 
-    // Initial check
     handlePopState();
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -55,7 +58,8 @@ function AppContent() {
     else if (page === 'verify-email') path = '/verify-email';
     else if (page === 'forgot-password') path = '/forgot-password';
     else if (page === 'reset-password') path = '/reset-password';
-    else if (page === 'dashboard') path = '/dashboard/overview';
+    else if (page === 'dashboard') path = '/dashboard';
+    else if (page === 'console') path = '/dashboard/overview';
 
     window.history.pushState({}, '', path);
     setCurrentPage(page as any);
@@ -83,16 +87,31 @@ function AppContent() {
   }
 
   if (currentPage === 'dashboard') {
-    return <DashboardContainer onNavigate={navigateTo} initialTab={dashboardTab} />;
+    return (
+      <ProtectedRoute onNavigate={navigateTo}>
+        <DashboardPlaceholder 
+          onNavigate={navigateTo} 
+          onOpenFullConsole={() => setCurrentPage('console')} 
+        />
+      </ProtectedRoute>
+    );
   }
 
-  // Default: Landing Page
+  if (currentPage === 'console') {
+    return (
+      <ProtectedRoute onNavigate={navigateTo}>
+        <DashboardContainer onNavigate={navigateTo} initialTab={dashboardTab} />
+      </ProtectedRoute>
+    );
+  }
+
+  // Default: Landing Page (100% pixel-identical)
   return (
     <div className="min-h-screen font-sans bg-[#FFFFFF] text-[#0F172A] selection:bg-[#1E3A8A]/15 selection:text-[#1E3A8A]">
-      
       {/* 1. Sticky 72px Navbar */}
       <Navbar 
         onOpenLogin={() => navigateTo(isAuthenticated ? 'dashboard' : 'login')}
+        onOpenSignup={() => navigateTo(isAuthenticated ? 'dashboard' : 'signup')}
         onOpenDemo={() => setDemoModalOpen(true)}
       />
 
@@ -130,7 +149,6 @@ function AppContent() {
         isOpen={demoModalOpen} 
         onClose={() => setDemoModalOpen(false)} 
       />
-
     </div>
   );
 }
@@ -149,5 +167,3 @@ export function App() {
 }
 
 export default App;
-
-

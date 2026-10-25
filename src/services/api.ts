@@ -1,312 +1,336 @@
 /**
- * Hind DB - Auth API Service
+ * Hind DB - Auth API Client
  * Company: Hind India Private Limited
  * Product: Hind DB (hind.io)
  * Copyright: © 2026 Hind. A Hind India Private Limited Company.
  */
 
-const API_BASE = '/api/v1/auth';
+const API_BASE = '/auth';
 
 export interface User {
   id: string;
   email: string;
-  name: string;
-  emailVerified: boolean;
-  mfaEnabled?: boolean;
+  full_name: string;
+  name?: string;
+  email_verified?: boolean;
+  emailVerified?: boolean;
+  avatar_url?: string | null;
+  avatarUrl?: string | null;
   role?: string;
-  avatarUrl?: string;
+  mfaEnabled?: boolean;
+  mfa_enabled?: boolean;
 }
 
 export interface AuthResponse {
   success: boolean;
   message?: string;
   error?: string;
-  mfaRequired?: boolean;
-  tempSessionId?: string;
   data?: {
     accessToken?: string;
-    expiresIn?: number;
     user?: User;
-    debugVerificationToken?: string;
-    debugResetToken?: string;
   };
 }
 
-// Local mock storage for standalone frontend demo mode
-const LOCAL_USERS_KEY = 'hind_db_mock_users';
-const CURRENT_USER_KEY = 'hind_db_current_user';
-const ACCESS_TOKEN_KEY = 'hind_db_access_token';
+// In-memory access token storage (NEVER in localStorage for security)
+let inMemoryAccessToken: string | null = null;
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string | null) => void> = [];
 
-function getLocalUsers(): Record<string, any> {
-  try {
-    const data = localStorage.getItem(LOCAL_USERS_KEY);
-    return data ? JSON.parse(data) : {};
-  } catch {
-    return {};
-  }
+export function getInMemoryAccessToken(): string | null {
+  return inMemoryAccessToken;
 }
 
-function saveLocalUsers(users: Record<string, any>) {
-  try {
-    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
-  } catch {}
+export function setInMemoryAccessToken(token: string | null): void {
+  inMemoryAccessToken = token;
+}
+
+function onRefreshed(token: string | null) {
+  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers = [];
+}
+
+function addRefreshSubscriber(callback: (token: string | null) => void) {
+  refreshSubscribers.push(callback);
+}
+
+/**
+ * Universal authenticated API fetch wrapper
+ * Attaches in-memory Bearer token and automatically handles 401 token refresh retry
+ */
+export async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  const url = endpoint.startsWith('http') || endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`;
+
+  const headers = new Headers(options.headers || {});
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  if (inMemoryAccessToken) {
+    headers.set('Authorization', `Bearer ${inMemoryAccessToken}`);
+  }
+
+  const fetchOptions: RequestInit = {
+    ...options,
+    headers,
+    credentials: 'include', // Automatically send and receive httpOnly cookies
+  };
+
+  let response = await fetch(url, fetchOptions);
+
+  // If 401 Unauthorized and not already refreshing, attempt token rotation
+  if (response.status === 401 && !url.includes('/auth/refresh') && !url.includes('/auth/login')) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        const refreshRes = await authApi.refresh();
+        if (refreshRes.success && refreshRes.data?.accessToken) {
+          const newToken = refreshRes.data.accessToken;
+          setInMemoryAccessToken(newToken);
+          isRefreshing = false;
+          onRefreshed(newToken);
+
+          // Retry the original failed request with the new access token
+          headers.set('Authorization', `Bearer ${newToken}`);
+          return await fetch(url, { ...fetchOptions, headers });
+        } else {
+          setInMemoryAccessToken(null);
+          isRefreshing = false;
+          onRefreshed(null);
+        }
+      } catch (err) {
+        setInMemoryAccessToken(null);
+        isRefreshing = false;
+        onRefreshed(null);
+      }
+    } else {
+      // If a refresh is already in flight, wait for it to complete
+      return new Promise<Response>((resolve) => {
+        addRefreshSubscriber(async (newToken) => {
+          if (newToken) {
+            headers.set('Authorization', `Bearer ${newToken}`);
+            resolve(await fetch(url, { ...fetchOptions, headers }));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+    }
+  }
+
+  return response;
 }
 
 export const authApi = {
-  // Signup
+  // 1. Signup
   async signup(name: string, email: string, password: string): Promise<AuthResponse> {
     try {
-      const res = await fetch(`${API_BASE}/signup`, {
+      const res = await apiFetch(`${API_BASE}/signup`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
       });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      // Fallback to local sandbox engine
-    }
-
-    // Local Sandbox Simulation
-    const users = getLocalUsers();
-    const cleanEmail = email.toLowerCase().trim();
-    if (users[cleanEmail]) {
+      const data = await res.json();
+      return {
+        success: res.ok && data.success,
+        message: data.message,
+        error: data.error || (data.message && !res.ok ? data.message : undefined),
+        data: data.data,
+      };
+    } catch (e: any) {
       return {
         success: false,
-        error: 'User Already Exists',
-        message: 'An account with this email address already exists. Please sign in.',
+        error: 'NETWORK_ERROR',
+        message: e.message || 'Network error occurred. Please check your connection.',
       };
     }
-
-    const token = `verify_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    users[cleanEmail] = {
-      id: `usr_${Date.now()}`,
-      name,
-      email: cleanEmail,
-      password,
-      emailVerified: false,
-      verificationToken: token,
-      mfaEnabled: false,
-    };
-    saveLocalUsers(users);
-
-    return {
-      success: true,
-      message: 'Account created! Please check your email to verify your account.',
-      data: {
-        debugVerificationToken: token,
-      },
-    };
   },
 
-  // Login
-  async login(email: string, password: string, mfaCode?: string): Promise<AuthResponse> {
+  // 2. Login
+  async login(email: string, password: string): Promise<AuthResponse> {
     try {
-      const res = await fetch(`${API_BASE}/login`, {
+      const res = await apiFetch(`${API_BASE}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, mfaCode }),
+        body: JSON.stringify({ email, password }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.data?.accessToken) {
-          localStorage.setItem(ACCESS_TOKEN_KEY, data.data.accessToken);
-          localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(data.data.user));
+      const data = await res.json();
+      if (res.ok && data.success && data.data?.accessToken) {
+        setInMemoryAccessToken(data.data.accessToken);
+        // Normalize user properties
+        if (data.data.user) {
+          data.data.user.name = data.data.user.full_name;
         }
-        return data;
       }
-    } catch (e) {
-      // Fallback
-    }
-
-    // Local Sandbox Login
-    const users = getLocalUsers();
-    const cleanEmail = email.toLowerCase().trim();
-    const user = users[cleanEmail];
-
-    if (!user || user.password !== password) {
-      // Allow standard dev credentials
-      if (cleanEmail === 'developer@hind.io' && password === 'HindDB@2026') {
-        const devUser: User = {
-          id: 'usr_dev_hind_101',
-          email: 'developer@hind.io',
-          name: 'Hind Sovereign Builder',
-          emailVerified: true,
-          mfaEnabled: false,
-          role: 'admin',
-        };
-        const token = `hind_jwt_${Date.now()}`;
-        localStorage.setItem(ACCESS_TOKEN_KEY, token);
-        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(devUser));
-        return {
-          success: true,
-          message: 'Login successful!',
-          data: { accessToken: token, user: devUser },
-        };
-      }
-
+      return {
+        success: res.ok && data.success,
+        message: data.message,
+        error: data.error || (data.message && !res.ok ? data.message : undefined),
+        data: data.data,
+      };
+    } catch (e: any) {
       return {
         success: false,
-        error: 'Invalid Credentials',
-        message: 'Invalid email or password. Please try again.',
+        error: 'NETWORK_ERROR',
+        message: e.message || 'Network error occurred. Please check your connection.',
       };
     }
-
-    if (!user.emailVerified) {
-      return {
-        success: false,
-        error: 'Email Not Verified',
-        message: 'Please verify your email address before signing in.',
-      };
-    }
-
-    if (user.mfaEnabled && !mfaCode) {
-      return {
-        success: true,
-        mfaRequired: true,
-        message: 'Enter your 6-digit authentication code.',
-      };
-    }
-
-    const userData: User = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      emailVerified: true,
-      mfaEnabled: user.mfaEnabled,
-    };
-    const token = `hind_jwt_${Date.now()}`;
-    localStorage.setItem(ACCESS_TOKEN_KEY, token);
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userData));
-
-    return {
-      success: true,
-      message: 'Login successful!',
-      data: { accessToken: token, user: userData },
-    };
   },
 
-  // Verify Email
+  // 3. Verify Email
   async verifyEmail(token: string): Promise<AuthResponse> {
     try {
-      const res = await fetch(`${API_BASE}/verify-email`, {
+      const res = await apiFetch(`${API_BASE}/verify-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
-    // Local Sandbox verification
-    const users = getLocalUsers();
-    for (const key of Object.keys(users)) {
-      if (users[key].verificationToken === token || token === 'demo-token' || token.startsWith('verify_')) {
-        users[key].emailVerified = true;
-        saveLocalUsers(users);
-        return {
-          success: true,
-          message: 'Email address verified successfully!',
-          data: {
-            user: {
-              id: users[key].id,
-              email: users[key].email,
-              name: users[key].name,
-              emailVerified: true,
-            },
-          },
-        };
-      }
+      const data = await res.json();
+      return {
+        success: res.ok && data.success,
+        message: data.message,
+        error: data.error || (data.message && !res.ok ? data.message : undefined),
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        error: 'NETWORK_ERROR',
+        message: e.message || 'Network error occurred.',
+      };
     }
-
-    return {
-      success: true,
-      message: 'Email address verified successfully!',
-    };
   },
 
-  // Forgot Password
-  async forgotPassword(email: string): Promise<AuthResponse> {
+  // 4. Resend Verification
+  async resendVerification(email: string): Promise<AuthResponse> {
     try {
-      const res = await fetch(`${API_BASE}/forgot-password`, {
+      const res = await apiFetch(`${API_BASE}/resend-verification`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
-    const resetToken = `reset_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    return {
-      success: true,
-      message: 'If an account exists with this email, a reset link has been sent.',
-      data: {
-        debugResetToken: resetToken,
-      },
-    };
-  },
-
-  // Reset Password
-  async resetPassword(token: string, newPassword: string): Promise<AuthResponse> {
-    try {
-      const res = await fetch(`${API_BASE}/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword }),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
-    return {
-      success: true,
-      message: 'Your password has been successfully reset! Please sign in.',
-    };
-  },
-
-  // OAuth Simulation
-  async oauthSignIn(provider: 'google' | 'github'): Promise<AuthResponse> {
-    const mockUser: User = {
-      id: `usr_${provider}_${Date.now()}`,
-      email: provider === 'google' ? 'developer.google@hind.io' : 'builder.github@hind.io',
-      name: provider === 'google' ? 'Google Developer' : 'GitHub Builder',
-      emailVerified: true,
-      mfaEnabled: false,
-      avatarUrl: provider === 'google' 
-        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80'
-        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
-    };
-
-    const token = `hind_jwt_oauth_${Date.now()}`;
-    localStorage.setItem(ACCESS_TOKEN_KEY, token);
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(mockUser));
-
-    return {
-      success: true,
-      message: `Signed in with ${provider === 'google' ? 'Google' : 'GitHub'}!`,
-      data: { accessToken: token, user: mockUser },
-    };
-  },
-
-  // Logout
-  async logout(): Promise<void> {
-    try {
-      await fetch(`${API_BASE}/logout`, { method: 'POST' });
-    } catch (e) {}
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(CURRENT_USER_KEY);
-  },
-
-  // Get Current Session
-  getCurrentUser(): User | null {
-    try {
-      const data = localStorage.getItem(CURRENT_USER_KEY);
-      return data ? JSON.parse(data) : null;
-    } catch {
-      return null;
+      const data = await res.json();
+      return {
+        success: res.ok && data.success,
+        message: data.message,
+        error: data.error || (data.message && !res.ok ? data.message : undefined),
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        error: 'NETWORK_ERROR',
+        message: e.message || 'Network error occurred.',
+      };
     }
   },
 
+  // 5. Refresh Session
+  async refresh(): Promise<AuthResponse> {
+    try {
+      const res = await fetch(`${API_BASE}/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.data?.accessToken) {
+        setInMemoryAccessToken(data.data.accessToken);
+        if (data.data.user) {
+          data.data.user.name = data.data.user.full_name;
+        }
+      } else {
+        setInMemoryAccessToken(null);
+      }
+      return {
+        success: res.ok && data.success,
+        message: data.message,
+        error: data.error,
+        data: data.data,
+      };
+    } catch (e: any) {
+      setInMemoryAccessToken(null);
+      return {
+        success: false,
+        error: 'NETWORK_ERROR',
+        message: e.message,
+      };
+    }
+  },
+
+  // 6. Get Current User (/auth/me)
+  async getMe(): Promise<AuthResponse> {
+    try {
+      const res = await apiFetch(`${API_BASE}/me`);
+      const data = await res.json();
+      if (res.ok && data.success && data.data?.user) {
+        data.data.user.name = data.data.user.full_name;
+      }
+      return {
+        success: res.ok && data.success,
+        message: data.message,
+        error: data.error,
+        data: data.data,
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        error: 'NETWORK_ERROR',
+        message: e.message,
+      };
+    }
+  },
+
+  // 7. Forgot Password
+  async forgotPassword(email: string): Promise<AuthResponse> {
+    try {
+      const res = await apiFetch(`${API_BASE}/forgot-password`, {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      return {
+        success: res.ok && data.success,
+        message: data.message,
+        error: data.error || (data.message && !res.ok ? data.message : undefined),
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        error: 'NETWORK_ERROR',
+        message: e.message,
+      };
+    }
+  },
+
+  // 8. Reset Password
+  async resetPassword(token: string, password: string): Promise<AuthResponse> {
+    try {
+      const res = await apiFetch(`${API_BASE}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+      });
+      const data = await res.json();
+      return {
+        success: res.ok && data.success,
+        message: data.message,
+        error: data.error || (data.message && !res.ok ? data.message : undefined),
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        error: 'NETWORK_ERROR',
+        message: e.message,
+      };
+    }
+  },
+
+  // 9. Logout
+  async logout(): Promise<void> {
+    try {
+      await fetch(`${API_BASE}/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (e) {}
+    setInMemoryAccessToken(null);
+  },
+
+  // Helper getters
   getToken(): string | null {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    return inMemoryAccessToken;
   },
 };

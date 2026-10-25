@@ -5,24 +5,35 @@
 -- Copyright: © 2026 Hind. A Hind India Private Limited Company.
 -- ===================================================================
 
+CREATE EXTENSION IF NOT EXISTS citext;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 1. Users Table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NULL,
-    name VARCHAR(255) NOT NULL,
+    email CITEXT UNIQUE NOT NULL,
+    full_name TEXT NOT NULL,
+    password_hash TEXT NULL,
     email_verified BOOLEAN DEFAULT FALSE,
-    mfa_enabled BOOLEAN DEFAULT FALSE,
-    mfa_secret VARCHAR(255) NULL,
-    avatar_url VARCHAR(512) NULL,
+    avatar_url TEXT NULL,
     role VARCHAR(50) DEFAULT 'developer', -- 'admin', 'developer', 'viewer'
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- 1b. OAuth Accounts Table (Google, etc.)
+CREATE TABLE IF NOT EXISTS oauth_accounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,
+    provider_user_id TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(provider, provider_user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_oauth_accounts_user_id ON oauth_accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_accounts_provider ON oauth_accounts(provider, provider_user_id);
 
 -- 2. Databases Table
 CREATE TABLE IF NOT EXISTS databases (

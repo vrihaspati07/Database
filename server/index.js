@@ -17,7 +17,14 @@ import metricsRoutes from './routes/metricsRoutes.js';
 import { pool } from './config/database.js';
 import { redis } from './config/redis.js';
 
+import helmet from 'helmet';
+
 const app = express();
+
+// Security Headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
 // Intercept HTTP metrics for Prometheus scraping
 app.use(metricsMiddleware);
@@ -28,11 +35,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // CORS configuration for Sovereign web console
+const frontendUrl = config.app.frontendUrl || 'http://localhost:5173';
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow all origins in dev or specific origins in production
-      callback(null, true);
+      if (!origin || origin === frontendUrl || origin.startsWith('http://localhost:')) {
+        callback(null, true);
+      } else {
+        callback(null, frontendUrl);
+      }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -43,7 +54,8 @@ app.use(
 // Mount Metrics & Observability (Prometheus & Health)
 app.use('/', metricsRoutes);
 
-// Mount API Endpoints
+// Mount Auth Endpoints under /auth and /api/v1/auth
+app.use('/auth', authRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/databases', databaseRoutes);
 

@@ -41,17 +41,18 @@ class MockStore {
 
   saveUser(user) {
     const id = user.id || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const fullName = user.full_name || user.name || 'User';
     const record = {
       id,
-      email: user.email,
+      email: user.email.toLowerCase(),
       password_hash: user.password_hash || null,
-      name: user.name,
+      full_name: fullName,
+      name: fullName,
       email_verified: user.email_verified || false,
-      mfa_enabled: user.mfa_enabled || false,
-      mfa_secret: user.mfa_secret || null,
       avatar_url: user.avatar_url || null,
+      role: user.role || 'developer',
       created_at: user.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
     this.users.set(id, record);
     return record;
@@ -60,7 +61,14 @@ class MockStore {
   updateUser(id, updates) {
     const user = this.users.get(id);
     if (!user) return null;
-    const updated = { ...user, ...updates, updated_at: new Date().toISOString() };
+    const fullName = updates.full_name || updates.name || user.full_name;
+    const updated = { 
+      ...user, 
+      ...updates, 
+      full_name: fullName,
+      name: fullName,
+      updated_at: new Date().toISOString() 
+    };
     this.users.set(id, updated);
     return updated;
   }

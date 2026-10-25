@@ -14,15 +14,19 @@ export const config = {
     version: '2.4.0',
     port: parseInt(process.env.PORT || '4000', 10),
     env: process.env.NODE_ENV || 'development',
-    corsOrigin: process.env.CORS_ORIGIN || '*',
-    jwtSecret: process.env.JWT_SECRET || 'hind_db_super_secret_jwt_key_india_2026',
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    corsOrigin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:5173',
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+    backendUrl: process.env.BACKEND_URL || 'http://localhost:4000',
+    jwtAccessSecret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'hind_db_super_access_secret_2026_india_sovereign_key',
+    jwtSecret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'hind_db_super_access_secret_2026_india_sovereign_key',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '15m',
     refreshSecret: process.env.REFRESH_TOKEN_SECRET || 'hind_db_refresh_secret_2026',
-    refreshExpiresIn: '30d',
+    refreshExpiresIn: '7d',
     region: process.env.HIND_REGION || 'ap-south-1 (Sovereign)',
   },
 
   db: {
+    databaseUrl: process.env.DATABASE_URL || 'postgresql://hind_admin:hind_secure_pass_2026@localhost:5432/hind_db_production',
     host: process.env.PG_HOST || 'localhost',
     port: parseInt(process.env.PG_PORT || '5432', 10),
     user: process.env.PG_USER || 'hind_admin',
@@ -35,12 +39,27 @@ export const config = {
   },
 
   redis: {
+    redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
     password: process.env.REDIS_PASSWORD || undefined,
     db: parseInt(process.env.REDIS_DB || '0', 10),
     keyPrefix: 'hind_db:',
     defaultTtl: 3600, // 1 hour in seconds
+  },
+
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || `${process.env.BACKEND_URL || 'http://localhost:4000'}/auth/google/callback`,
+  },
+
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.MAIL_FROM || '"Hind DB" <noreply@hind.io>',
   },
 
   minio: {

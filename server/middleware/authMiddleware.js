@@ -6,7 +6,8 @@
  */
 
 import { verifyAccessToken } from '../services/security.js';
-import { mockStore, query } from '../db/index.js';
+import { query } from '../config/database.js';
+import { mockStore } from '../db/index.js';
 
 export async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -14,7 +15,7 @@ export async function requireAuth(req, res, next) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      error: 'Unauthorized',
+      error: 'UNAUTHORIZED',
       message: 'Access token required. Please provide a valid Bearer token.',
     });
   }
@@ -25,25 +26,31 @@ export async function requireAuth(req, res, next) {
   if (!decoded) {
     return res.status(401).json({
       success: false,
-      error: 'Invalid or Expired Token',
+      error: 'UNAUTHORIZED',
       message: 'Your session has expired. Please refresh your token or log in again.',
     });
   }
 
   // Load user from database or mock store
   let user = null;
-  const dbRes = await query('SELECT id, email, name, email_verified, mfa_enabled, role FROM users WHERE id = $1', [decoded.sub]);
-  
-  if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-    user = dbRes.rows[0];
-  } else {
+  try {
+    const dbRes = await query(
+      'SELECT id, email, full_name, avatar_url, role, email_verified FROM users WHERE id = $1',
+      [decoded.sub]
+    );
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      user = dbRes.rows[0];
+    }
+  } catch (err) {}
+
+  if (!user) {
     user = mockStore.findUserById(decoded.sub);
   }
 
   if (!user) {
     return res.status(401).json({
       success: false,
-      error: 'User Not Found',
+      error: 'USER_NOT_FOUND',
       message: 'The user account associated with this token no longer exists.',
     });
   }

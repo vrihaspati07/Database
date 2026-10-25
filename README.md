@@ -202,6 +202,66 @@ Visit **http://localhost:5173** to access the Hind DB Developer Console!
 
 ---
 
+## 🔐 Authentication Setup
+
+Hind DB features a sovereign, self-hosted authentication engine built with **Argon2id** password hashing, **Redis-backed token rotation**, and **Google OAuth 2.0** via `google-auth-library`.
+
+### 1. Environment Variables Configuration
+
+Copy `.env.example` to `.env` and configure the following variables:
+
+| Variable | Description | Default / Example |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL 16 connection string | `postgresql://hind_admin:hind_secure_pass_2026@localhost:5432/hind_db_production` |
+| `REDIS_URL` | Redis 7 connection string | `redis://localhost:6379` |
+| `JWT_ACCESS_SECRET` | Secret key for signing 15-minute JWT access tokens | Strong 256-bit random secret |
+| `FRONTEND_URL` | Base URL of frontend web app | `http://localhost:5173` |
+| `BACKEND_URL` | Base URL of backend Express API | `http://localhost:4000` |
+| `GOOGLE_CLIENT_ID` | Google Cloud OAuth 2.0 Web Client ID | `your-id.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Google Cloud OAuth 2.0 Client Secret | `your-client-secret` |
+| `GOOGLE_REDIRECT_URI` | Google OAuth authorized callback URI | `http://localhost:4000/auth/google/callback` |
+| `SMTP_HOST` | Outgoing SMTP server hostname | `smtp.gmail.com` *(optional in dev)* |
+| `SMTP_PORT` | Outgoing SMTP port (587 or 465) | `587` |
+| `SMTP_USER` | SMTP username / account email | `your-email@gmail.com` |
+| `SMTP_PASS` | SMTP password / app password | `your-app-password` |
+| `MAIL_FROM` | Default sender header | `"Hind DB" <noreply@hind.io>` |
+
+> **Development Mode Mailbox**: If `SMTP_HOST` is left blank in development (`NODE_ENV=development`), verification and password reset links are automatically printed to the terminal console for instant testing.
+
+### 2. Google Cloud OAuth 2.0 Setup
+
+To enable Google Sign-In:
+1. Navigate to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a new project or select an existing one (e.g. `hind-db-auth`).
+3. Go to **APIs & Services** > **OAuth consent screen**:
+   - Choose **External** user type.
+   - Enter your App name (`Hind DB`) and developer contact emails.
+   - Add scopes: `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`.
+4. Go to **Credentials** > **Create Credentials** > **OAuth client ID**:
+   - Application type: **Web application**.
+   - Name: `Hind DB Web Client`.
+   - **Authorized JavaScript origins**: `http://localhost:5173`, `http://localhost:4000`.
+   - **Authorized redirect URIs**: `http://localhost:4000/auth/google/callback`.
+5. Copy the generated **Client ID** and **Client Secret** into your `.env` file.
+
+### 3. Running Database Migrations
+
+Hind DB database schemas use `citext` for case-insensitive email indexes, UUID primary keys, and dedicated OAuth account link tables:
+
+```bash
+# Apply all pending migrations (up)
+npm run migrate:up
+
+# Rollback last migration (down)
+npm run migrate:down
+
+# Or run via node-pg-migrate CLI directly:
+npm run migrate:pg:up
+npm run migrate:pg:down
+```
+
+---
+
 ## 🚢 Production Deployment
 
 For complete instructions on deploying to **AWS Elastic Kubernetes Service (EKS)** in Sovereign Region (`ap-south-1`):
