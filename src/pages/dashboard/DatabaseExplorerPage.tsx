@@ -41,7 +41,7 @@ export const DatabaseExplorerPage: React.FC<DatabaseExplorerPageProps> = ({
 
   // SQL Runner state
   const [isSqlEditorOpen, setIsSqlEditorOpen] = useState(true);
-  const [sqlQuery, setSqlQuery] = useState('SELECT * FROM quick_commerce_orders WHERE status = \'DELIVERED\' LIMIT 20;');
+  const [sqlQuery, setSqlQuery] = useState('SELECT NOW() as server_time, version();');
   const [sqlResult, setSqlResult] = useState<{ columns: string[]; rows: any[]; latencyMs: number; count: number } | null>(null);
   const [sqlRunning, setSqlRunning] = useState(false);
 
@@ -368,8 +368,10 @@ export const DatabaseExplorerPage: React.FC<DatabaseExplorerPageProps> = ({
             ) : (
               <div className="h-64 flex flex-col items-center justify-center text-center p-6 text-[#64748B]">
                 <Table2 className="w-10 h-10 text-[#CBD5E1] mb-2" />
-                <p className="text-sm font-semibold text-[#0F172A]">No Rows Found</p>
-                <p className="text-xs text-[#94A3B8] mt-0.5">Click "+ Add Row" above to insert data into this table.</p>
+                <p className="text-sm font-semibold text-[#0F172A]">{selectedTable ? 'No Rows Found' : 'No Table Selected'}</p>
+                <p className="text-xs text-[#94A3B8] mt-0.5">
+                  {selectedTable ? 'Click "+ Add Row" above to insert data into this table.' : 'Create or select a table from the left sidebar to explore its schema and records.'}
+                </p>
               </div>
             )}
           </div>

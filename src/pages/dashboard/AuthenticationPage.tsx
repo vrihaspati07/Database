@@ -22,15 +22,15 @@ export const AuthenticationPage: React.FC = () => {
   const [githubOauth, setGithubOauth] = useState({ enabled: true, clientId: 'Iv1.99a8b7c6d5e4f3a2', clientSecret: '••••••••••••••••••••••••' });
   const [microsoftOauth, setMicrosoftOauth] = useState({ enabled: false, clientId: '', clientSecret: '' });
 
-  // Users state
-  const [usersList, setUsersList] = useState([
-    { id: 'usr_001', name: 'Aarav Sharma', email: 'aarav.sharma@quickmart.in', created_at: '2026-09-28', status: 'ACTIVE', provider: 'Google' },
-    { id: 'usr_002', name: 'Priya Iyer', email: 'priya.iyer@finset.io', created_at: '2026-09-28', status: 'ACTIVE', provider: 'GitHub' },
-    { id: 'usr_003', name: 'Rohan Gupta', email: 'rohan.g@bharatcart.in', created_at: '2026-09-27', status: 'ACTIVE', provider: 'Email' },
-    { id: 'usr_004', name: 'Divya Reddy', email: 'divya.reddy@hyderabad.dev', created_at: '2026-09-26', status: 'UNVERIFIED', provider: 'Magic Link' },
-    { id: 'usr_005', name: 'Vikram Malhotra', email: 'vikram.m@hind.io', created_at: '2026-09-25', status: 'ACTIVE', provider: 'Google' },
-    { id: 'usr_006', name: 'Ananya Deshmukh', email: 'ananya.d@pune.org', created_at: '2026-09-24', status: 'ACTIVE', provider: 'Phone OTP' },
-  ]);
+  // Users state (Clean state - no mock users)
+  const [usersList, setUsersList] = useState<Array<{ id: string; name: string; email: string; created_at: string; status: string; provider: string }>>(() => {
+    try {
+      const saved = localStorage.getItem('hind_auth_registered_users');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [userSearch, setUserSearch] = useState('');
 
   // Template state
@@ -312,42 +312,58 @@ export const AuthenticationPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F1F5F9] text-[#334155]">
-                {filteredUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-[#F8FAFC]">
-                    <td className="py-3.5 px-5 whitespace-nowrap">
-                      <div className="font-semibold text-[#0F172A]">{u.name}</div>
-                      <div className="text-[#64748B] text-[11px] font-mono">{u.email}</div>
-                    </td>
-                    <td className="py-3.5 px-5 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-[#1E3A8A] border border-blue-200">
-                        {u.provider}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-5 text-[#64748B] whitespace-nowrap">
-                      {u.created_at}
-                    </td>
-                    <td className="py-3.5 px-5 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                        u.status === 'ACTIVE'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}>
-                        {u.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete User"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-[#64748B]">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center mb-3">
+                          <ShieldCheck className="w-6 h-6" />
+                        </div>
+                        <h4 className="font-semibold text-sm text-[#0F172A]">No End Users Registered Yet</h4>
+                        <p className="text-xs text-[#64748B] max-w-sm mt-1">
+                          When users sign up or log in on your client application via Hind Auth API (<code className="font-mono text-[11px] bg-slate-100 px-1 py-0.5 rounded">/auth/signup</code>), their identities and verification status will appear here.
+                        </p>
                       </div>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-[#F8FAFC]">
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <div className="font-semibold text-[#0F172A]">{u.name}</div>
+                        <div className="text-[#64748B] text-[11px] font-mono">{u.email}</div>
+                      </td>
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-[#1E3A8A] border border-blue-200">
+                          {u.provider}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-5 text-[#64748B] whitespace-nowrap">
+                        {u.created_at}
+                      </td>
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                          u.status === 'ACTIVE'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {u.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete User"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -18,17 +18,28 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPlaceholder } from './pages/DashboardPlaceholder';
 import { DashboardContainer } from './pages/DashboardContainer';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { AcceptInvitePage } from './pages/AcceptInvitePage';
+
+// Lazy load admin bundle to keep main website bundle separated and protected
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
-  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'signup' | 'verify-email' | 'forgot-password' | 'reset-password' | 'dashboard' | 'console'>('home');
+  const { isAuthenticated, user } = useAuth();
+  const [currentPage, setCurrentPage] = useState<
+    'home' | 'login' | 'signup' | 'verify-email' | 'forgot-password' | 'reset-password' | 'dashboard' | 'console' | 'control-x7k9' | 'accept-invite' | 'not-found'
+  >('home');
   const [dashboardTab, setDashboardTab] = useState<string>('overview');
   const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [adminToken, setAdminToken] = useState<string | null>(() => {
+    return sessionStorage.getItem('hind_admin_token') || localStorage.getItem('hind_admin_token') || null;
+  });
 
   // Sync with browser URL
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname.replace(/^\//, '');
+      // Strip leading and trailing slashes for robust matching
+      const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
       if (path === 'login') setCurrentPage('login');
       else if (path === 'signup') setCurrentPage('signup');
       else if (path === 'verify-email') setCurrentPage('verify-email');
@@ -40,8 +51,14 @@ function AppContent() {
         if (parts[1]) setDashboardTab(parts[1]);
       } else if (path === 'console') {
         setCurrentPage('console');
-      } else {
+      } else if (path === 'control-x7k9' || path.startsWith('control-x7k9')) {
+        setCurrentPage('control-x7k9');
+      } else if (path === 'accept-invite' || path.startsWith('accept-invite')) {
+        setCurrentPage('accept-invite');
+      } else if (path === '' || path === '/') {
         setCurrentPage('home');
+      } else {
+        setCurrentPage('not-found');
       }
     };
 
@@ -60,6 +77,8 @@ function AppContent() {
     else if (page === 'reset-password') path = '/reset-password';
     else if (page === 'dashboard') path = '/dashboard';
     else if (page === 'console') path = '/dashboard/overview';
+    else if (page === 'control-x7k9') path = '/control-x7k9';
+    else if (page === 'accept-invite') path = '/accept-invite';
 
     window.history.pushState({}, '', path);
     setCurrentPage(page as any);
@@ -105,6 +124,54 @@ function AppContent() {
     );
   }
 
+  // Secret Sovereign Admin Route (Cloaked under genuine 404 for unauthorized visitors)
+  if (currentPage === 'control-x7k9') {
+    if (adminToken) {
+      return (
+        <Suspense
+          fallback={
+            <div className="min-h-screen bg-[#070B14] text-white flex flex-col items-center justify-center space-y-3 font-mono">
+              <div className="w-8 h-8 border-2 border-[#38BDF8] border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-[#94A3B8]">Decrypting sovereign admin cluster...</span>
+            </div>
+          }
+        >
+          <AdminDashboard
+            onNavigate={navigateTo}
+            onLogout={() => {
+              setAdminToken(null);
+              sessionStorage.removeItem('hind_admin_token');
+              sessionStorage.removeItem('hind_admin_user');
+              localStorage.removeItem('hind_admin_token');
+              localStorage.removeItem('hind_admin_user');
+              navigateTo('home');
+            }}
+          />
+        </Suspense>
+      );
+    }
+
+    // Unauthenticated: Deliver stealth 404 with secret gatekeeper
+    return (
+      <NotFoundPage
+        onNavigate={navigateTo}
+        isSecretRoute={true}
+        currentUser={user}
+        onAdminAuthenticated={(token) => {
+          setAdminToken(token);
+        }}
+      />
+    );
+  }
+
+  if (currentPage === 'accept-invite') {
+    return <AcceptInvitePage onNavigate={navigateTo} />;
+  }
+
+  if (currentPage === 'not-found') {
+    return <NotFoundPage onNavigate={navigateTo} />;
+  }
+
   // Default: Landing Page (100% pixel-identical)
   return (
     <div className="min-h-screen font-sans bg-[#FFFFFF] text-[#0F172A] selection:bg-[#1E3A8A]/15 selection:text-[#1E3A8A]">
@@ -132,7 +199,11 @@ function AppContent() {
         <CodeSection />
 
         {/* 6. Pricing Section (3 cards: Free, Pro, Enterprise) */}
-        <Pricing />
+        <Pricing 
+          onNavigate={navigateTo}
+          onOpenSignup={() => navigateTo(isAuthenticated ? 'dashboard' : 'signup')}
+          onOpenLogin={() => navigateTo('login')}
+        />
 
         {/* 7. Testimonials Section (3 columns) */}
         <Testimonials />

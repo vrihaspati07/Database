@@ -5,13 +5,46 @@
  * Copyright: © 2026 Hind. A Hind India Private Limited Company.
  */
 
+import dns from 'dns';
 import pg from 'pg';
 import { config } from './index.js';
 
+// Resilient DNS resolution fallback for dual-stack IPv4/IPv6 networks (e.g. macOS / Jio)
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {}
+
+const originalLookup = dns.lookup;
+dns.lookup = (hostname, options, callback) => {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  originalLookup(hostname, options, (err, address, family) => {
+    if (!err && address) return callback(null, address, family);
+    dns.resolve4(hostname, (err2, addresses) => {
+      if (err2 || !addresses || addresses.length === 0) return callback(err || err2);
+      if (options && options.all) {
+        return callback(null, addresses.map((a) => ({ address: a, family: 4 })));
+      }
+      return callback(null, addresses[0], 4);
+    });
+  });
+};
+
 const { Pool } = pg;
 
+const sslOption = config.db.ssl !== false
+  ? config.db.ssl
+  : (config.db.databaseUrl && (config.db.databaseUrl.includes('sslmode=require') || config.db.databaseUrl.includes('neon.tech')))
+    ? { rejectUnauthorized: false }
+    : false;
+
 const poolConfig = config.db.databaseUrl
-  ? { connectionString: config.db.databaseUrl, ssl: config.db.ssl }
+  ? {
+      connectionString: config.db.databaseUrl,
+      ...(sslOption ? { ssl: sslOption } : {}),
+    }
   : {
       host: config.db.host,
       port: config.db.port,

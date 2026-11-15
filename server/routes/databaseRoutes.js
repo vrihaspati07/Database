@@ -6,6 +6,10 @@
  */
 
 import { Router } from 'express';
+import { requireAuth } from '../middleware/authMiddleware.js';
+import { teamController } from '../controllers/teamController.js';
+import { functionsController } from '../controllers/functionsController.js';
+import { apiKeyController } from '../controllers/apiKeyController.js';
 import {
   getDatabases,
   createDatabase,
@@ -20,18 +24,29 @@ import {
   executeQuery,
   getStorageFiles,
   uploadFile,
-  getFunctions,
-  createFunction,
-  deployFunction,
 } from '../controllers/databaseController.js';
 
 const router = Router();
+
+// Accept Invite Endpoint (Global database invite acceptance; must precede /:id routes)
+router.post('/invites/accept', requireAuth, teamController.acceptInvite);
 
 // Databases
 router.get('/', getDatabases);
 router.post('/', createDatabase);
 router.get('/:id', getDatabaseById);
 router.delete('/:id', deleteDatabase);
+
+// Team Management
+router.get('/:id/team', requireAuth, teamController.getTeam);
+router.post('/:id/team/invites', requireAuth, teamController.inviteMember);
+router.patch('/:id/team/:memberId', requireAuth, teamController.updateRole);
+router.delete('/:id/team/:memberId', requireAuth, teamController.removeMember);
+
+// API Keys Management (admin+)
+router.get('/:id/api-keys', requireAuth, apiKeyController.listKeys);
+router.post('/:id/api-keys', requireAuth, apiKeyController.createKey);
+router.delete('/:id/api-keys/:keyId', requireAuth, apiKeyController.revokeKey);
 
 // Tables & Data
 router.get('/:id/tables', getTables);
@@ -49,8 +64,11 @@ router.get('/:id/storage', getStorageFiles);
 router.post('/:id/storage/upload', uploadFile);
 
 // Serverless Edge Functions
-router.get('/:id/functions', getFunctions);
-router.post('/:id/functions', createFunction);
-router.post('/:id/functions/:fnId/deploy', deployFunction);
+router.get('/:id/functions', requireAuth, functionsController.listFunctions);
+router.post('/:id/functions', requireAuth, functionsController.createFunction);
+router.put('/:id/functions/:fnId', requireAuth, functionsController.updateFunction);
+router.delete('/:id/functions/:fnId', requireAuth, functionsController.deleteFunction);
+router.post('/:id/functions/:fnId/invoke', requireAuth, functionsController.invokeFunction);
+router.get('/:id/functions/:fnId/logs', requireAuth, functionsController.getLogs);
 
 export default router;

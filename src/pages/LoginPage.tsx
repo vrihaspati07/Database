@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { useAuth } from '../context/AuthContext';
+import { dashboardApi } from '../services/dashboardApi';
 import { Eye, EyeOff, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { GoogleIcon } from '../components/Icons';
 
@@ -17,10 +18,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect logged-in users away from /login
+  // Redirect logged-in users away from /login (and process pending invite if any)
   useEffect(() => {
     if (isAuthenticated || user) {
-      onNavigate('dashboard');
+      const pendingToken = sessionStorage.getItem('pending_invite_token');
+      if (pendingToken) {
+        dashboardApi.acceptInvite(pendingToken).then((acceptRes) => {
+          if (acceptRes.databaseId) {
+            dashboardApi.setActiveDbId(acceptRes.databaseId);
+          }
+          sessionStorage.removeItem('pending_invite_token');
+          onNavigate('console');
+        }).catch(() => {
+          onNavigate('dashboard');
+        });
+      } else {
+        onNavigate('dashboard');
+      }
     }
   }, [isAuthenticated, user, onNavigate]);
 
@@ -50,6 +64,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
       const res = await login(email, password);
 
       if (res.success) {
+        const pendingToken = sessionStorage.getItem('pending_invite_token');
+        if (pendingToken) {
+          try {
+            const acceptRes = await dashboardApi.acceptInvite(pendingToken);
+            if (acceptRes.databaseId) {
+              dashboardApi.setActiveDbId(acceptRes.databaseId);
+            }
+            sessionStorage.removeItem('pending_invite_token');
+            onNavigate('console');
+            return;
+          } catch (e) {
+            console.warn('Failed to accept pending invite on login:', e);
+          }
+        }
         onNavigate('dashboard');
       } else {
         const errorMsg = res.message || res.error || 'Invalid email or password.';

@@ -38,6 +38,27 @@ BEGIN
             ALTER TABLE users ADD COLUMN full_name TEXT NOT NULL DEFAULT 'User';
         END IF;
     END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='users' AND column_name='email_verified'
+    ) THEN
+        IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name='users' AND column_name='is_verified'
+        ) THEN
+            ALTER TABLE users RENAME COLUMN is_verified TO email_verified;
+        ELSE
+            ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE;
+        END IF;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='users' AND column_name='avatar_url'
+    ) THEN
+        ALTER TABLE users ADD COLUMN avatar_url TEXT NULL;
+    END IF;
 END $$;
 
 -- Alter email type to CITEXT if needed

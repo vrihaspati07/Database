@@ -25,21 +25,10 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   onOpenInviteMember 
 }) => {
   const [databases] = useState(() => dashboardApi.getDatabases());
-  const activeDb = databases[0] || { name: 'production-ecommerce-cluster', region: 'Sovereign-01' };
+  const activeDb = databases.length > 0 ? databases[0] : null;
 
-  // 10 recent activity records
-  const recentActivities = [
-    { id: 1, action: 'Table Altered', detail: 'Added column `payment_mode` to `orders`', user: 'Aarav Sharma', timestamp: '2 minutes ago', type: 'schema' },
-    { id: 2, action: 'Row Inserted', detail: 'New record created in `quick_commerce_orders`', user: 'API Gateway', timestamp: '5 minutes ago', type: 'write' },
-    { id: 3, action: 'Function Deployed', detail: 'Deployed `razorpay-webhook-handler` v2.4', user: 'Priya Iyer', timestamp: '18 minutes ago', type: 'deploy' },
-    { id: 4, action: 'File Uploaded', detail: '`kyc_documents/aadhaar_verify_992.pdf` (1.4 MB)', user: 'Storage Worker', timestamp: '42 minutes ago', type: 'storage' },
-    { id: 5, action: 'API Key Created', detail: 'Generated `Next.js Production Anon Key`', user: 'Aarav Sharma', timestamp: '1 hour ago', type: 'security' },
-    { id: 6, action: 'Backup Completed', detail: 'Automated snapshot taken (ap-south-1 Sovereign)', user: 'Hind Automated Ops', timestamp: '2 hours ago', type: 'system' },
-    { id: 7, action: 'RLS Policy Updated', detail: 'Enabled strict row isolation on `users` table', user: 'Vikram Malhotra', timestamp: '3 hours ago', type: 'schema' },
-    { id: 8, action: 'Index Rebuilt', detail: 'GIN index optimized on `catalog_products.title`', user: 'Postgres Optimizer', timestamp: '4 hours ago', type: 'system' },
-    { id: 9, action: 'Team Member Joined', detail: 'Priya Iyer accepted developer invite', user: 'Aarav Sharma', timestamp: '5 hours ago', type: 'team' },
-    { id: 10, action: 'Database Scaled', detail: 'Compute allocated +2 vCPU auto-scale burst', user: 'AutoScaler', timestamp: '6 hours ago', type: 'system' },
-  ];
+  // Real recent activity records (empty when no events logged)
+  const recentActivities: Array<{ id: number; action: string; detail: string; user: string; timestamp: string; type: string }> = [];
 
   return (
     <div className="space-y-8">
@@ -48,18 +37,18 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#1E3A8A] border border-blue-200">
-              Active Database: {activeDb.name}
+              Active Database: {activeDb ? activeDb.name : 'No Cluster Active'}
             </span>
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse" />
-              Healthy (99.999% SLA)
+              Sovereign Cloud (99.999% SLA)
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] mt-2 tracking-tight">
             Database Overview
           </h1>
           <p className="text-[#475569] text-sm mt-1">
-            Real-time analytics, database health metrics, and infrastructure telemetry from <span className="font-medium text-[#0F172A]">{activeDb.region}</span>.
+            Real-time analytics, database health metrics, and infrastructure telemetry from <span className="font-medium text-[#0F172A]">{activeDb ? activeDb.region : 'ap-south-1 (Sovereign)'}</span>.
           </p>
         </div>
 
@@ -252,36 +241,44 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F5F9] text-[#334155]">
-              {recentActivities.map((act) => (
-                <tr key={act.id} className="hover:bg-[#F8FAFC] transition-colors">
-                  <td className="py-3.5 px-5 font-semibold text-[#0F172A] whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${
-                        act.type === 'schema' ? 'bg-blue-500' :
-                        act.type === 'write' ? 'bg-emerald-500' :
-                        act.type === 'deploy' ? 'bg-purple-500' :
-                        act.type === 'storage' ? 'bg-amber-500' :
-                        act.type === 'security' ? 'bg-red-500' : 'bg-slate-400'
-                      }`} />
-                      {act.action}
-                    </div>
-                  </td>
-                  <td className="py-3.5 px-5 font-mono text-xs text-[#475569] max-w-md truncate">
-                    {act.detail}
-                  </td>
-                  <td className="py-3.5 px-5 text-xs text-[#0F172A] font-medium whitespace-nowrap">
-                    {act.user}
-                  </td>
-                  <td className="py-3.5 px-5 text-xs text-[#64748B] whitespace-nowrap">
-                    {act.timestamp}
-                  </td>
-                  <td className="py-3.5 px-5 text-right whitespace-nowrap">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Success
-                    </span>
+              {recentActivities.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-sm text-[#64748B]">
+                    No activity recorded yet. Schema changes, queries, and deployments will appear here in real-time.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentActivities.map((act) => (
+                  <tr key={act.id} className="hover:bg-[#F8FAFC] transition-colors">
+                    <td className="py-3.5 px-5 font-semibold text-[#0F172A] whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${
+                          act.type === 'schema' ? 'bg-blue-500' :
+                          act.type === 'write' ? 'bg-emerald-500' :
+                          act.type === 'deploy' ? 'bg-purple-500' :
+                          act.type === 'storage' ? 'bg-amber-500' :
+                          act.type === 'security' ? 'bg-red-500' : 'bg-slate-400'
+                        }`} />
+                        {act.action}
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-5 font-mono text-xs text-[#475569] max-w-md truncate">
+                      {act.detail}
+                    </td>
+                    <td className="py-3.5 px-5 text-xs text-[#0F172A] font-medium whitespace-nowrap">
+                      {act.user}
+                    </td>
+                    <td className="py-3.5 px-5 text-xs text-[#64748B] whitespace-nowrap">
+                      {act.timestamp}
+                    </td>
+                    <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Success
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

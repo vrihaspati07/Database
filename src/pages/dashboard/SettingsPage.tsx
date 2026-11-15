@@ -44,6 +44,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenInviteMember }
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyRole, setNewKeyRole] = useState<'anon' | 'service_role'>('anon');
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<{ name: string; key: string } | null>(null);
+  const [copiedNewKey, setCopiedNewKey] = useState(false);
+  const [apiKeyLoading, setApiKeyLoading] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
 
   // Security tab state
   const [mfaActive, setMfaActive] = useState(true);
@@ -60,8 +64,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenInviteMember }
   ];
 
   useEffect(() => {
-    setTeam(dashboardApi.getTeamMembers());
-    setApiKeys(dashboardApi.getApiKeys());
+    const activeDbId = dashboardApi.getActiveDbId() || 'default_project';
+    dashboardApi.getTeam(activeDbId).then(setTeam).catch(() => setTeam(dashboardApi.getTeamMembers()));
+    dashboardApi.getProjectApiKeys(activeDbId).then(setApiKeys).catch(() => setApiKeys(dashboardApi.getApiKeys()));
   }, []);
 
   const handleSaveGeneral = (e: React.FormEvent) => {
@@ -70,24 +75,49 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenInviteMember }
     setTimeout(() => setSavedGeneral(false), 2500);
   };
 
-  const handleCreateApiKey = (e: React.FormEvent) => {
+  const handleCreateApiKey = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeyName.trim()) return;
 
-    dashboardApi.createApiKey(newKeyName.trim(), newKeyRole);
-    setApiKeys(dashboardApi.getApiKeys());
-    setIsKeyModalOpen(false);
-    setNewKeyName('');
+    try {
+      setApiKeyLoading(true);
+      setApiKeyError(null);
+      const activeDbId = dashboardApi.getActiveDbId() || 'default_project';
+      const res = await dashboardApi.createProjectApiKey(activeDbId, {
+        name: newKeyName.trim(),
+        role: newKeyRole,
+      });
+
+      const updated = await dashboardApi.getProjectApiKeys(activeDbId);
+      setApiKeys(updated);
+      setNewlyCreatedKey({ name: newKeyName.trim(), key: res.fullKey });
+      setIsKeyModalOpen(false);
+      setNewKeyName('');
+    } catch (err: any) {
+      setApiKeyError(err.message || 'Failed to generate API key');
+    } finally {
+      setApiKeyLoading(false);
+    }
   };
 
-  const handleRevokeKey = (id: string) => {
-    dashboardApi.revokeApiKey(id);
-    setApiKeys(dashboardApi.getApiKeys());
+  const handleRevokeKey = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to revoke API key '${name}'? Any apps or servers using this key will immediately be denied access.`)) {
+      return;
+    }
+
+    try {
+      const activeDbId = dashboardApi.getActiveDbId() || 'default_project';
+      await dashboardApi.revokeProjectApiKey(activeDbId, id);
+      const updated = await dashboardApi.getProjectApiKeys(activeDbId);
+      setApiKeys(updated);
+    } catch (err: any) {
+      alert('Failed to revoke API key: ' + err.message);
+    }
   };
 
-  const handleCopyKey = (key: ApiKeyItem) => {
-    navigator.clipboard.writeText(key.key);
-    setCopiedKeyId(key.id);
+  const handleCopyKey = (keyPrefixOrKey: string, id: string) => {
+    navigator.clipboard.writeText(keyPrefixOrKey);
+    setCopiedKeyId(id);
     setTimeout(() => setCopiedKeyId(null), 2000);
   };
 
@@ -283,25 +313,47 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenInviteMember }
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F5F9]">
-              {team.map((m) => (
-                <tr key={m.id} className="hover:bg-[#F8FAFC]">
-                  <td className="py-3.5 px-5">
-                    <div className="font-semibold text-[#0F172A]">{m.name}</div>
-                    <div className="text-[11px] text-[#64748B]">{m.email}</div>
-                  </td>
-                  <td className="py-3.5 px-5">
-                    <span className="capitalize px-2 py-0.5 rounded bg-blue-50 text-[#1E3A8A] font-medium border border-blue-200">
-                      {m.role}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-5">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      {m.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-5 text-[#64748B]">{m.joined_at}</td>
-                </tr>
-              ))}
+              {team.map((m) => {
+                const isOwner = m.is_owner || m.role === 'owner';
+                return (
+                  <tr key={m.id} className="hover:bg-[#F8FAFC]">
+                    <td className="py-3.5 px-5">
+                      <div className="font-semibold text-[#0F172A] flex items-center gap-1.5">
+                        {m.name}
+                        {isOwner && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                            Owner
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-[#64748B]">{m.email}</div>
+                    </td>
+                    <td className="py-3.5 px-5">
+                      <span className={`capitalize px-2 py-0.5 rounded text-xs font-medium border ${
+                        isOwner
+                          ? 'bg-purple-50 text-purple-800 border-purple-200'
+                          : 'bg-blue-50 text-[#1E3A8A] border-blue-200'
+                      }`}>
+                        {m.role}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-5">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                        m.status === 'ACTIVE'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : m.status === 'INVITED'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-rose-50 text-rose-700 border-rose-200'
+                      }`}>
+                        {m.status}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-5 text-[#64748B]">
+                      {m.joined_at ? new Date(m.joined_at).toLocaleDateString() : 'Pending'}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -310,63 +362,130 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenInviteMember }
       {/* 4. API Keys Tab */}
       {activeTab === 'api-keys' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="font-bold text-[#0F172A] text-base">Project API Keys</h3>
-              <p className="text-xs text-[#64748B] mt-0.5">Use anonymous keys for frontend and service role keys in backend servers.</p>
+              <p className="text-xs text-[#64748B] mt-0.5">
+                Cryptographic authentication keys in <code className="font-mono text-[#1E3A8A]">hk_live_...</code> format. Keys are hashed with SHA-256 for maximum security.
+              </p>
             </div>
             <button
-              onClick={() => setIsKeyModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1E3A8A] text-white rounded-xl text-xs font-semibold hover:bg-[#172554] shadow-xs"
+              onClick={() => { setApiKeyError(null); setIsKeyModalOpen(true); }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1E3A8A] text-white rounded-xl text-xs font-semibold hover:bg-[#172554] shadow-xs shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Create API Key</span>
             </button>
           </div>
 
-          <div className="space-y-4">
-            {apiKeys.map((k) => (
-              <div key={k.id} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-[#0F172A]">{k.name}</span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                      k.role === 'service_role' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-blue-50 text-[#1E3A8A] border border-blue-200'
-                    }`}>
-                      {k.role === 'service_role' ? 'SERVICE ROLE (SECRET)' : 'ANON (PUBLIC)'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleRevokeKey(k.id)}
-                    className="p-1 text-red-500 hover:bg-red-50 rounded"
-                    title="Revoke Key"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+          {/* Newly Created Secret Key Banner (Shown ONCE) */}
+          {newlyCreatedKey && (
+            <div className="p-5 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-3 animate-scaleUp">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <span>Save your new API Key: {newlyCreatedKey.name}</span>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={k.key}
-                    className="w-full font-mono text-xs px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#334155]"
-                  />
-                  <button
-                    onClick={() => handleCopyKey(k)}
-                    className="p-2 border border-[#CBD5E1] rounded-xl hover:bg-[#F1F5F9] text-[#475569]"
-                    title="Copy API Key"
-                  >
-                    {copiedKeyId === k.id ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-[#64748B]">
-                  <span>Created: {k.created_at}</span>
-                  <span>Last used: {k.last_used_at}</span>
-                </div>
+                <button
+                  onClick={() => setNewlyCreatedKey(null)}
+                  className="text-amber-700 hover:text-amber-900"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            ))}
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Please copy and store this key securely. For your security, <strong>it will never be displayed again</strong>.
+              </p>
+              <div className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-200">
+                <input
+                  type="text"
+                  readOnly
+                  value={newlyCreatedKey.key}
+                  className="w-full font-mono text-xs text-[#0F172A] bg-transparent outline-none select-all"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(newlyCreatedKey.key);
+                    setCopiedNewKey(true);
+                    setTimeout(() => setCopiedNewKey(false), 2000);
+                  }}
+                  className="px-3 py-1.5 bg-[#1E3A8A] text-white rounded-lg text-xs font-semibold hover:bg-[#172554] shrink-0 inline-flex items-center gap-1"
+                >
+                  {copiedNewKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedNewKey ? 'Copied' : 'Copy Key'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {apiKeys.length === 0 ? (
+              <div className="bg-white p-8 rounded-2xl border border-[#E2E8F0] text-center space-y-2">
+                <Key className="w-8 h-8 text-[#94A3B8] mx-auto" />
+                <p className="text-sm font-semibold text-[#0F172A]">No API Keys Generated</p>
+                <p className="text-xs text-[#64748B]">Create an API key to securely query your database, storage, and functions from client applications.</p>
+              </div>
+            ) : (
+              apiKeys.map((k) => {
+                const isRevoked = Boolean(k.revoked_at);
+                const displayKey = k.key || k.key_prefix;
+                return (
+                  <div key={k.id} className={`bg-white p-5 rounded-2xl border transition-all ${isRevoked ? 'border-slate-200 opacity-60 bg-slate-50' : 'border-[#E2E8F0] shadow-xs space-y-3'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-[#0F172A]">{k.name}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                          k.role === 'service_role'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : k.role === 'admin'
+                            ? 'bg-orange-50 text-orange-700 border-orange-200'
+                            : 'bg-blue-50 text-[#1E3A8A] border border-blue-200'
+                        }`}>
+                          {k.role ? k.role.toUpperCase() : 'ANON'}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                          isRevoked
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}>
+                          {isRevoked ? 'REVOKED' : 'ACTIVE'}
+                        </span>
+                      </div>
+                      {!isRevoked && (
+                        <button
+                          onClick={() => handleRevokeKey(k.id, k.name)}
+                          className="p-1.5 text-[#94A3B8] hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                          title="Revoke Key"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={displayKey}
+                        className="w-full font-mono text-xs px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#334155]"
+                      />
+                      <button
+                        onClick={() => handleCopyKey(displayKey, k.id)}
+                        className="p-2 border border-[#CBD5E1] rounded-xl hover:bg-[#F1F5F9] text-[#475569] shrink-0"
+                        title="Copy Key Prefix"
+                      >
+                        {copiedKeyId === k.id ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between text-[11px] text-[#64748B] pt-1">
+                      <span>Created: {k.created_at ? new Date(k.created_at).toLocaleDateString() : 'Active'}</span>
+                      <span>Last used: {k.last_used_at ? new Date(k.last_used_at).toLocaleString() : 'Never'}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* Modal */}
@@ -374,47 +493,59 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenInviteMember }
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
               <div className="bg-white rounded-2xl max-w-md w-full border border-[#E2E8F0] p-6 space-y-4 shadow-2xl">
                 <div className="flex items-center justify-between border-b pb-3">
-                  <h3 className="font-bold text-[#0F172A]">Generate New API Key</h3>
+                  <h3 className="font-bold text-[#0F172A] flex items-center gap-2">
+                    <Key className="w-4 h-4 text-[#1E3A8A]" />
+                    Generate New API Key
+                  </h3>
                   <button onClick={() => setIsKeyModalOpen(false)}>
                     <X className="w-4 h-4 text-[#64748B]" />
                   </button>
                 </div>
+
+                {apiKeyError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl">
+                    {apiKeyError}
+                  </div>
+                )}
+
                 <form onSubmit={handleCreateApiKey} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#475569] mb-1">Key Name</label>
+                    <label className="block text-xs font-semibold text-[#475569] mb-1">Key Name *</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Mobile App Key"
+                      placeholder="e.g. Mobile App Client, Analytics Service"
                       value={newKeyName}
                       onChange={(e) => setNewKeyName(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-[#CBD5E1] outline-none"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-[#CBD5E1] outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                     />
+                    <p className="text-[11px] text-[#64748B] mt-1 font-mono">Format: hk_live_&lt;32 random chars&gt;</p>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#475569] mb-1">Role Type</label>
                     <select
                       value={newKeyRole}
                       onChange={(e) => setNewKeyRole(e.target.value as any)}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-[#CBD5E1] bg-white outline-none"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-[#CBD5E1] bg-white outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                     >
-                      <option value="anon">Anon (Client-safe, uses RLS)</option>
-                      <option value="service_role">Service Role (Admin, bypasses RLS)</option>
+                      <option value="anon">Anon (Client-safe, uses PostgreSQL RLS)</option>
+                      <option value="service_role">Service Role (Backend Secret, full cluster access)</option>
                     </select>
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <button
                       type="button"
                       onClick={() => setIsKeyModalOpen(false)}
-                      className="px-4 py-2 text-xs font-medium text-[#475569] border rounded-xl"
+                      className="px-4 py-2 text-xs font-medium text-[#475569] border border-[#CBD5E1] rounded-xl hover:bg-[#F1F5F9]"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 text-xs font-semibold text-white bg-[#1E3A8A] rounded-xl"
+                      disabled={apiKeyLoading}
+                      className="px-4 py-2 text-xs font-semibold text-white bg-[#1E3A8A] hover:bg-[#172554] rounded-xl shadow-xs disabled:opacity-50"
                     >
-                      Generate Key
+                      {apiKeyLoading ? 'Generating...' : 'Generate Key'}
                     </button>
                   </div>
                 </form>

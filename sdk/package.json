@@ -1,0 +1,21 @@
+{
+  "name": "@hinddb/sdk",
+  "version": "1.0.0",
+  "description": "Official JavaScript and TypeScript SDK for Hind DB Sovereign Backend Platform",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "keywords": [
+    "hinddb",
+    "supabase-alternative",
+    "storage",
+    "database",
+    "edge-functions",
+    "india"
+  ],
+  "author": "Hind India Private Limited",
+  "license": "Apache-2.0"
+}
+

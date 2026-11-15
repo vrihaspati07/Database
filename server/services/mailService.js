@@ -33,6 +33,14 @@ export async function sendVerificationEmail({ to, name, token }) {
   const verificationLink = `${frontendUrl}/verify-email?token=${token}`;
   const mailTransporter = getTransporter();
 
+  // In development mode: Always log verification link to console for testing/debugging
+  if (config.app.env === 'development' || !mailTransporter) {
+    console.log('\n======================================================');
+    console.log(`[Hind DB MailService (Dev Mode)]: Verification Link for ${to}`);
+    console.log(`==> ${verificationLink}`);
+    console.log('======================================================\n');
+  }
+
   if (mailTransporter) {
     try {
       await mailTransporter.sendMail({
@@ -57,18 +65,10 @@ export async function sendVerificationEmail({ to, name, token }) {
           </div>
         `,
       });
-      return { sent: true };
+      return { sent: true, link: verificationLink };
     } catch (err) {
       console.error('[MailService Error]: Failed to send verification email via SMTP:', err.message);
     }
-  }
-
-  // Fallback in development: Print verification link to console
-  if (config.app.env === 'development' || !mailTransporter) {
-    console.log('\n======================================================');
-    console.log(`[Hind DB MailService (Dev Mode)]: Verification Link for ${to}`);
-    console.log(`==> ${verificationLink}`);
-    console.log('======================================================\n');
   }
 
   return { sent: false, fallback: true, link: verificationLink };
@@ -81,6 +81,14 @@ export async function sendPasswordResetEmail({ to, name, token }) {
   const frontendUrl = config.app.frontendUrl.replace(/\/$/, '');
   const resetLink = `${frontendUrl}/reset-password?token=${token}`;
   const mailTransporter = getTransporter();
+
+  // In development mode: Always log reset link to console for testing/debugging
+  if (config.app.env === 'development' || !mailTransporter) {
+    console.log('\n======================================================');
+    console.log(`[Hind DB MailService (Dev Mode)]: Password Reset Link for ${to}`);
+    console.log(`==> ${resetLink}`);
+    console.log('======================================================\n');
+  }
 
   if (mailTransporter) {
     try {
@@ -106,19 +114,42 @@ export async function sendPasswordResetEmail({ to, name, token }) {
           </div>
         `,
       });
-      return { sent: true };
+      return { sent: true, link: resetLink };
     } catch (err) {
       console.error('[MailService Error]: Failed to send password reset email via SMTP:', err.message);
     }
   }
 
-  // Fallback in development: Print reset link to console
+  return { sent: false, fallback: true, link: resetLink };
+}
+
+/**
+ * Generic email sender helper
+ */
+export async function sendMail({ to, subject, html, text }) {
+  const mailTransporter = getTransporter();
+
   if (config.app.env === 'development' || !mailTransporter) {
     console.log('\n======================================================');
-    console.log(`[Hind DB MailService (Dev Mode)]: Password Reset Link for ${to}`);
-    console.log(`==> ${resetLink}`);
+    console.log(`[Hind DB MailService (Dev Mode)]: Email to ${to}`);
+    console.log(`Subject: ${subject}`);
     console.log('======================================================\n');
   }
 
-  return { sent: false, fallback: true, link: resetLink };
+  if (mailTransporter) {
+    try {
+      await mailTransporter.sendMail({
+        from: config.smtp.from,
+        to,
+        subject,
+        html,
+        text,
+      });
+      return { sent: true };
+    } catch (err) {
+      console.warn('[MailService Warning]: Failed to send email via SMTP:', err.message);
+    }
+  }
+
+  return { sent: false, fallback: true };
 }

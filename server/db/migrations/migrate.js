@@ -43,6 +43,30 @@ async function runMigrations() {
         await client.query(authSql);
       }
 
+      if (fs.existsSync(path.join(__dirname, '004_admin_and_security.sql'))) {
+        console.log('[Hind DB Migrations]: Applying 004_admin_and_security.sql...');
+        const adminSql = fs.readFileSync(path.join(__dirname, '004_admin_and_security.sql'), 'utf-8');
+        await client.query(adminSql);
+      }
+
+      if (fs.existsSync(path.join(__dirname, '005_storage_schema.sql'))) {
+        console.log('[Hind DB Migrations]: Applying 005_storage_schema.sql...');
+        const storageSql = fs.readFileSync(path.join(__dirname, '005_storage_schema.sql'), 'utf-8');
+        await client.query(storageSql);
+      }
+
+      if (fs.existsSync(path.join(__dirname, '006_api_keys_schema.sql'))) {
+        console.log('[Hind DB Migrations]: Applying 006_api_keys_schema.sql...');
+        const apiKeysSql = fs.readFileSync(path.join(__dirname, '006_api_keys_schema.sql'), 'utf-8');
+        await client.query(apiKeysSql);
+      }
+
+      if (fs.existsSync(path.join(__dirname, '007_storage_audit_and_overrides.sql'))) {
+        console.log('[Hind DB Migrations]: Applying 007_storage_audit_and_overrides.sql...');
+        const storagePhase2Sql = fs.readFileSync(path.join(__dirname, '007_storage_audit_and_overrides.sql'), 'utf-8');
+        await client.query(storagePhase2Sql);
+      }
+
       console.log('[Hind DB Migrations]: All migrations applied successfully!');
     }
   } catch (err) {

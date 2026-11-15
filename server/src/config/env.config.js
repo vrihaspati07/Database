@@ -22,6 +22,7 @@ export const envConfig = {
     company: 'Hind India Private Limited',
   },
   db: {
+    databaseUrl: process.env.DATABASE_URL,
     host: process.env.PG_HOST || 'localhost',
     port: parseInt(process.env.PG_PORT || '5432', 10),
     user: process.env.PG_USER || 'hind_admin',

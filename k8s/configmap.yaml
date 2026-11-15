@@ -5,7 +5,7 @@ metadata:
   namespace: hind-db
 data:
   NODE_ENV: "production"
-  PORT: "4000"
+  PORT: "3000"
   HIND_REGION: "ap-south-1 (Sovereign)"
   PG_HOST: "hind-db-pg-cluster.internal.hind.io"
   PG_PORT: "5432"

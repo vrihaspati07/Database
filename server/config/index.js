@@ -72,6 +72,23 @@ export const config = {
     region: 'ap-south-1',
   },
 
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID || '',
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+    bucketName: process.env.R2_BUCKET_NAME || 'hind-db-storage',
+    endpoint: process.env.R2_BUCKET_ENDPOINT || '',
+    publicBaseUrl: process.env.STORAGE_PUBLIC_URL || 'https://storage.hinddb.com',
+  },
+
+  storage: {
+    freeQuotaBytes: 1024 * 1024 * 1024, // 1 GB free storage
+    proQuotaBytes: 10 * 1024 * 1024 * 1024, // 10 GB
+    businessQuotaBytes: 100 * 1024 * 1024 * 1024, // 100 GB
+    maxFileSizeBytes: 50 * 1024 * 1024, // 50 MB for free plan
+    blockedExtensions: ['.exe', '.sh', '.bat', '.cmd', '.msi', '.vbs', '.scr', '.ps1', '.jar', '.com', '.pif'],
+  },
+
   queue: {
     concurrency: parseInt(process.env.QUEUE_CONCURRENCY || '5', 10),
   },
@@ -79,5 +96,28 @@ export const config = {
   metrics: {
     enabled: process.env.METRICS_ENABLED !== 'false',
     path: '/metrics',
+  },
+
+  admin: {
+    emails: Array.from(
+      new Set(
+        [
+          ...(process.env.ADMIN_EMAILS || 'tumhara@gmail.com,vrihaspatichaubey@gmail.com')
+            .replace(/["']/g, '')
+            .split(',')
+            .map((e) => e.trim().toLowerCase())
+            .filter(Boolean),
+          (process.env.SMTP_USER || '').trim().toLowerCase(),
+        ].filter(Boolean)
+      )
+    ),
+    secretKey: process.env.ADMIN_SECRET_KEY || 'HindAdmin@2026!',
+    secretPath: process.env.ADMIN_SECRET_PATH || '/control-x7k9',
+    sessionTtl: parseInt(process.env.ADMIN_SESSION_TTL || '1800', 10), // 30 minutes in seconds
+    maxFailedAttempts: parseInt(process.env.ADMIN_MAX_FAILED_ATTEMPTS || '5', 10),
+    banDurationMs: parseInt(process.env.ADMIN_BAN_DURATION_MS || '3600000', 10), // 1 hour ban
+    jwtSecret: process.env.ADMIN_JWT_SECRET || 'hind_db_sovereign_admin_panel_x7k9_secret_key_2026',
+    alertEmail: process.env.ADMIN_ALERT_EMAIL || process.env.SMTP_USER || 'vrihaspatichaubey@gmail.com',
+    resendApiKey: process.env.RESEND_API_KEY || '',
   },
 };

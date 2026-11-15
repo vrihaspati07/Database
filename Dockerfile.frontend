@@ -1,6 +1,6 @@
 # Hind DB - Frontend Production Multi-Stage Dockerfile
-# Stage 1: Build React 18 + Vite App with Node 18
-FROM node:18-alpine AS builder
+# Stage 1: Build React 19 + Vite App with Node 22
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 

@@ -10,17 +10,30 @@ import { envConfig } from './env.config.js';
 
 const { Pool } = pg;
 
-export const pool = new Pool({
-  host: envConfig.db.host,
-  port: envConfig.db.port,
-  user: envConfig.db.user,
-  password: envConfig.db.password,
-  database: envConfig.db.database,
-  ssl: envConfig.db.ssl,
-  max: envConfig.db.max,
-  idleTimeoutMillis: envConfig.db.idleTimeoutMillis,
-  connectionTimeoutMillis: envConfig.db.connectionTimeoutMillis,
-});
+const sslOption = envConfig.db.ssl !== false
+  ? envConfig.db.ssl
+  : (envConfig.db.databaseUrl && (envConfig.db.databaseUrl.includes('sslmode=require') || envConfig.db.databaseUrl.includes('neon.tech')))
+    ? { rejectUnauthorized: false }
+    : false;
+
+export const pool = new Pool(
+  envConfig.db.databaseUrl
+    ? {
+        connectionString: envConfig.db.databaseUrl,
+        ...(sslOption ? { ssl: sslOption } : {}),
+      }
+    : {
+        host: envConfig.db.host,
+        port: envConfig.db.port,
+        user: envConfig.db.user,
+        password: envConfig.db.password,
+        database: envConfig.db.database,
+        ssl: envConfig.db.ssl,
+        max: envConfig.db.max,
+        idleTimeoutMillis: envConfig.db.idleTimeoutMillis,
+        connectionTimeoutMillis: envConfig.db.connectionTimeoutMillis,
+      }
+);
 
 pool.on('connect', (client) => {
   client.query("SET timezone = 'Asia/Kolkata'");

@@ -4,30 +4,77 @@ import {
   Sparkles, 
   ArrowRight, 
   CreditCard,
-  Zap
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { FreePlanModal } from './pricing/FreePlanModal';
+import { ProCheckoutModal } from './pricing/ProCheckoutModal';
+import { EnterpriseModal } from './pricing/EnterpriseModal';
 
+interface PricingProps {
+  onNavigate?: (page: string) => void;
+  onOpenSignup?: () => void;
+  onOpenLogin?: () => void;
+}
 
-export const Pricing: React.FC = () => {
+export const Pricing: React.FC<PricingProps> = ({
+  onNavigate,
+  onOpenSignup,
+  onOpenLogin
+}) => {
   const [annual, setAnnual] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'Free' | 'Pro' | 'Enterprise'>('Pro');
+  
+  // Modals for each plan's dedicated workflow
+  const [freeModalOpen, setFreeModalOpen] = useState(false);
+  const [proModalOpen, setProModalOpen] = useState(false);
+  const [enterpriseModalOpen, setEnterpriseModalOpen] = useState(false);
 
-  const triggerSelectPlan = () => {
-    confetti({
-      particleCount: 70,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#1E3A8A', '#F97316', '#10B981']
-    });
+  const triggerConfetti = (planName: 'Free' | 'Pro' | 'Enterprise') => {
+    if (planName === 'Free') {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { x: 0.22, y: 0.6 },
+        colors: ['#10B981', '#059669', '#3B82F6', '#1E3A8A']
+      });
+    } else if (planName === 'Pro') {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { x: 0.5, y: 0.6 },
+        colors: ['#1E3A8A', '#3B82F6', '#F97316', '#FB923C']
+      });
+    } else {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { x: 0.78, y: 0.6 },
+        colors: ['#0F172A', '#6366F1', '#8B5CF6', '#1E3A8A']
+      });
+    }
+  };
+
+  const handleSelectPlan = (planName: 'Free' | 'Pro' | 'Enterprise') => {
+    setSelectedPlan(planName);
+    triggerConfetti(planName);
+
+    if (planName === 'Free') {
+      setFreeModalOpen(true);
+    } else if (planName === 'Pro') {
+      setProModalOpen(true);
+    } else if (planName === 'Enterprise') {
+      setEnterpriseModalOpen(true);
+    }
   };
 
   const plans = [
     {
-      name: 'Free',
+      name: 'Free' as const,
       price: 0,
       subtitle: 'For developers, students & hobby projects',
-      highlight: false,
-      badge: 'Starter',
+      badge: 'Starter Choice',
       specs: '1GB Database • 10K Rows',
       features: [
         '1GB High-Speed Database Storage',
@@ -39,13 +86,11 @@ export const Pricing: React.FC = () => {
         'Standard Sovereign Region Access'
       ],
       btnText: 'Start Free Forever',
-      btnStyle: 'btn-outline',
     },
     {
-      name: 'Pro',
+      name: 'Pro' as const,
       price: 999,
       subtitle: 'For fast-growing startups, SaaS & apps',
-      highlight: true,
       badge: 'Most Popular',
       specs: '10GB Database • 1M Rows',
       features: [
@@ -59,14 +104,12 @@ export const Pricing: React.FC = () => {
         'Daily Automated Backups',
         'Priority Email & Chat Support (IST)'
       ],
-      btnText: 'Upgrade to Pro (₹999/mo)',
-      btnStyle: 'btn-primary-blue',
+      btnText: annual ? 'Upgrade to Pro (₹829/mo)' : 'Upgrade to Pro (₹999/mo)',
     },
     {
-      name: 'Enterprise',
+      name: 'Enterprise' as const,
       price: 9999,
       subtitle: 'For high-scale apps, fintech & enterprises',
-      highlight: false,
       badge: 'Dedicated VPC',
       specs: '100GB Database • Unlimited Rows',
       features: [
@@ -81,7 +124,6 @@ export const Pricing: React.FC = () => {
         'Custom BAA & Enterprise MSA'
       ],
       btnText: 'Choose Enterprise',
-      btnStyle: 'btn-outline',
     },
   ];
 
@@ -132,34 +174,52 @@ export const Pricing: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mb-16">
           {plans.map((p, idx) => {
             const finalPrice = p.price === 0 ? 0 : Math.round(annual ? p.price * 0.83 : p.price);
+            const isSelected = selectedPlan === p.name;
 
             return (
               <div
                 key={idx}
-                className={`p-8 sm:p-10 rounded-3xl bg-white flex flex-col justify-between transition-all duration-300 relative ${
-                  p.highlight
-                    ? 'border-2 border-[#1E3A8A] shadow-xl lg:-translate-y-2 ring-4 ring-blue-500/10'
-                    : 'border border-[#E2E8F0] shadow-sm hover:shadow-lg'
+                onClick={() => handleSelectPlan(p.name)}
+                className={`p-8 sm:p-10 rounded-3xl bg-white flex flex-col justify-between transition-all duration-300 relative cursor-pointer ${
+                  isSelected
+                    ? 'border-2 border-[#1E3A8A] shadow-2xl lg:-translate-y-2 ring-4 ring-blue-500/15'
+                    : 'border border-[#E2E8F0] shadow-sm hover:shadow-lg hover:border-slate-300'
                 }`}
               >
-                {/* Most Popular Badge for Pro Tier */}
-                {p.highlight && (
+                {/* Active / Top Badge for Selected Card */}
+                {isSelected && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#1E3A8A] text-white text-xs font-bold uppercase shadow-md flex items-center gap-1.5 font-mono">
-                    <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-                    <span>{p.badge}</span>
+                    {p.name === 'Pro' ? (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                        <span>Most Popular</span>
+                      </>
+                    ) : p.name === 'Free' ? (
+                      <>
+                        <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Starter Choice</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-3.5 h-3.5 text-purple-300" />
+                        <span>Dedicated Sovereign VPC</span>
+                      </>
+                    )}
                   </div>
                 )}
 
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className={`text-xl font-bold font-sans ${p.highlight ? 'text-[#1E3A8A]' : 'text-[#0F172A]'}`}>
+                    <span className={`text-xl font-bold font-sans ${isSelected ? 'text-[#1E3A8A]' : 'text-[#0F172A]'}`}>
                       {p.name}
                     </span>
-                    {!p.highlight && (
-                      <span className="px-3 py-0.5 rounded-full bg-[#F8FAFC] text-xs font-mono text-[#475569] border border-[#E2E8F0]">
-                        {p.badge}
-                      </span>
-                    )}
+                    <span className={`px-3 py-0.5 rounded-full text-xs font-mono border ${
+                      isSelected
+                        ? 'bg-blue-50 text-[#1E3A8A] border-blue-200 font-bold'
+                        : 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0]'
+                    }`}>
+                      {p.badge}
+                    </span>
                   </div>
 
                   {/* Price */}
@@ -171,7 +231,11 @@ export const Pricing: React.FC = () => {
                   </div>
 
                   {/* Key specs highlight */}
-                  <div className="inline-block px-3 py-1 rounded-lg bg-blue-50 border border-blue-100 text-xs font-semibold text-[#1E3A8A] mb-3">
+                  <div className={`inline-block px-3 py-1 rounded-lg text-xs font-semibold mb-3 ${
+                    isSelected 
+                      ? 'bg-blue-100/70 border border-blue-200 text-[#1E3A8A]' 
+                      : 'bg-blue-50 border border-blue-100 text-[#1E3A8A]'
+                  }`}>
                     {p.specs}
                   </div>
 
@@ -181,7 +245,7 @@ export const Pricing: React.FC = () => {
                   <div className="space-y-3.5 pt-6 border-t border-[#F1F5F9] text-sm text-[#475569]">
                     {p.features.map((feat, fIdx) => (
                       <div key={fIdx} className="flex items-start gap-3">
-                        <Check className={`w-4 h-4 shrink-0 mt-0.5 ${p.highlight ? 'text-[#1E3A8A] font-bold' : 'text-emerald-600'}`} />
+                        <Check className={`w-4 h-4 shrink-0 mt-0.5 ${isSelected ? 'text-[#1E3A8A] font-bold' : 'text-emerald-600'}`} />
                         <span className="leading-snug">{feat}</span>
                       </div>
                     ))}
@@ -191,8 +255,15 @@ export const Pricing: React.FC = () => {
                 {/* CTA Button */}
                 <div className="pt-8 mt-6 border-t border-[#F1F5F9]">
                   <button
-                    onClick={triggerSelectPlan}
-                    className={`w-full py-3.5 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${p.btnStyle}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectPlan(p.name);
+                    }}
+                    className={`w-full py-3.5 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'btn-primary-blue shadow-md'
+                        : 'btn-outline hover:border-[#1E3A8A] hover:text-[#1E3A8A]'
+                    }`}
                   >
                     <span>{p.btnText}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -233,7 +304,27 @@ export const Pricing: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Plan Specific Modals */}
+      <FreePlanModal
+        isOpen={freeModalOpen}
+        onClose={() => setFreeModalOpen(false)}
+        onOpenSignup={onOpenSignup}
+        onOpenLogin={onOpenLogin}
+      />
+
+      <ProCheckoutModal
+        isOpen={proModalOpen}
+        onClose={() => setProModalOpen(false)}
+        annual={annual}
+        onNavigate={onNavigate}
+        onOpenSignup={onOpenSignup}
+      />
+
+      <EnterpriseModal
+        isOpen={enterpriseModalOpen}
+        onClose={() => setEnterpriseModalOpen(false)}
+      />
     </section>
   );
 };
-

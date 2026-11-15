@@ -5,6 +5,8 @@
  * Copyright: © 2026 Hind. A Hind India Private Limited Company.
  */
 
+import { apiFetch } from './api';
+
 export interface DatabaseItem {
   id: string;
   name: string;
@@ -61,209 +63,64 @@ export interface EdgeFunction {
 
 export interface TeamMember {
   id: string;
+  user_id?: string;
   name: string;
   email: string;
-  role: 'admin' | 'developer' | 'viewer';
+  role: 'owner' | 'admin' | 'developer' | 'viewer';
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED';
   joined_at: string;
+  is_owner?: boolean;
   avatar_url?: string;
 }
 
 export interface ApiKeyItem {
   id: string;
+  database_id?: string;
   name: string;
-  key: string;
-  role: 'anon' | 'service_role';
+  key?: string; // only present once upon creation
+  key_prefix: string;
+  role: 'anon' | 'service_role' | 'admin' | 'developer';
   created_at: string;
-  last_used_at: string;
+  last_used_at: string | null;
+  revoked_at?: string | null;
+  created_by?: string;
 }
 
-// Initial default seed datasets
-const SEED_DATABASES: DatabaseItem[] = [
-  {
-    id: 'db_sovereign_01',
-    name: 'production-ecommerce-cluster',
-    region: 'Sovereign (ap-south-1)',
-    plan: 'Pro',
-    status: 'ACTIVE',
-    size_bytes: 4294967296, // 4.2 GB
-    created_at: '2026-09-15T10:00:00Z',
-    tablesCount: 3,
-    rowsCount: 101470,
-  },
-  {
-    id: 'db_sovereign_02',
-    name: 'analytics-telemetry-engine',
-    region: 'Sovereign (ap-south-2)',
-    plan: 'Enterprise',
-    status: 'ACTIVE',
-    size_bytes: 18253611008, // 18.2 GB
-    created_at: '2026-08-20T14:30:00Z',
-    tablesCount: 5,
-    rowsCount: 2450000,
-  },
-  {
-    id: 'db_delhi_03',
-    name: 'quick-commerce-delivery-dev',
-    region: 'Delhi NCR',
-    plan: 'Free',
-    status: 'ACTIVE',
-    size_bytes: 524288000, // 500 MB
-    created_at: '2026-09-24T09:15:00Z',
-    tablesCount: 2,
-    rowsCount: 12000,
-  },
-];
+// Initial default datasets (Clean - no fake mock data)
+const SEED_DATABASES: DatabaseItem[] = [];
+const SEED_TABLES: TableItem[] = [];
+const SEED_ROWS: Record<string, any[]> = {};
+const SEED_STORAGE_FILES: StorageFile[] = [];
+const SEED_FUNCTIONS: EdgeFunction[] = [];
+const SEED_TEAM: TeamMember[] = [];
+const SEED_API_KEYS: ApiKeyItem[] = [];
 
-const SEED_TABLES: TableItem[] = [
-  {
-    id: 'tbl_orders',
-    name: 'quick_commerce_orders',
-    row_count: 85940,
-    rls_enabled: true,
-    created_at: '2026-09-20T10:00:00Z',
-    schema: [
-      { name: 'id', type: 'UUID', isPrimary: true, nullable: false, default: 'gen_random_uuid()' },
-      { name: 'customer_name', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
-      { name: 'amount_inr', type: 'INTEGER', isPrimary: false, nullable: false, default: '0' },
-      { name: 'payment_method', type: 'VARCHAR(50)', isPrimary: false, nullable: false, default: 'UPI' },
-      { name: 'status', type: 'VARCHAR(50)', isPrimary: false, nullable: false, default: 'DELIVERED' },
-      { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Delhi NCR' },
-      { name: 'created_at', type: 'TIMESTAMP', isPrimary: false, nullable: false, default: 'NOW()' },
-    ],
-  },
-  {
-    id: 'tbl_users',
-    name: 'users',
-    row_count: 14280,
-    rls_enabled: true,
-    created_at: '2026-09-18T12:00:00Z',
-    schema: [
-      { name: 'id', type: 'UUID', isPrimary: true, nullable: false, default: 'gen_random_uuid()' },
-      { name: 'email', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
-      { name: 'name', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
-      { name: 'phone', type: 'VARCHAR(20)', isPrimary: false, nullable: true, default: '' },
-      { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Hyderabad' },
-      { name: 'created_at', type: 'TIMESTAMP', isPrimary: false, nullable: false, default: 'NOW()' },
-    ],
-  },
-  {
-    id: 'tbl_catalog',
-    name: 'catalog_products',
-    row_count: 1250,
-    rls_enabled: false,
-    created_at: '2026-09-22T08:30:00Z',
-    schema: [
-      { name: 'id', type: 'UUID', isPrimary: true, nullable: false, default: 'gen_random_uuid()' },
-      { name: 'title', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
-      { name: 'sku', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: '' },
-      { name: 'price_inr', type: 'INTEGER', isPrimary: false, nullable: false, default: '499' },
-      { name: 'category', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Electronics' },
-    ],
-  },
-];
-
-const SEED_ROWS: Record<string, any[]> = {
-  quick_commerce_orders: [
-    { id: 'ord_del_101', customer_name: 'Aarav Sharma', amount_inr: 1499, payment_method: 'UPI (PhonePe)', status: 'DELIVERED', city: 'Delhi NCR', created_at: '2026-09-29 18:30:10' },
-    { id: 'ord_hyd_102', customer_name: 'Pooja Iyer', amount_inr: 850, payment_method: 'RuPay Card', status: 'PROCESSING', city: 'Hyderabad', created_at: '2026-09-29 18:31:42' },
-    { id: 'ord_del_103', customer_name: 'Rohan Gupta', amount_inr: 3200, payment_method: 'NetBanking (HDFC)', status: 'CONFIRMED', city: 'Delhi NCR', created_at: '2026-09-29 18:34:05' },
-    { id: 'ord_hyd_104', customer_name: 'Divya Reddy', amount_inr: 950, payment_method: 'UPI (GPay)', status: 'DELIVERED', city: 'Hyderabad', created_at: '2026-09-29 18:38:19' },
-    { id: 'ord_pune_105', customer_name: 'Ananya Deshmukh', amount_inr: 2150, payment_method: 'UPI (Paytm)', status: 'IN_TRANSIT', city: 'Pune', created_at: '2026-09-29 18:41:00' },
-    { id: 'ord_che_106', customer_name: 'Karthik Subramanian', amount_inr: 1800, payment_method: 'RuPay Card', status: 'DELIVERED', city: 'Chennai', created_at: '2026-09-29 18:45:22' },
-  ],
-  users: [
-    { id: 'usr_in_101', email: 'aarav.s@quickmart.in', name: 'Aarav Sharma', phone: '+91 98201 44910', city: 'Delhi NCR', created_at: '2026-09-28 14:10:00' },
-    { id: 'usr_in_102', email: 'pooja.iyer@finset.io', name: 'Pooja Iyer', phone: '+91 94481 22819', city: 'Hyderabad', created_at: '2026-09-28 15:20:15' },
-    { id: 'usr_in_103', email: 'rohan.g@bharatcart.in', name: 'Rohan Gupta', phone: '+91 98110 55192', city: 'Delhi NCR', created_at: '2026-09-28 16:45:30' },
-    { id: 'usr_in_104', email: 'divya.reddy@hyderabad.dev', name: 'Divya Reddy', phone: '+91 99890 11223', city: 'Hyderabad', created_at: '2026-09-28 18:05:00' },
-  ],
-  catalog_products: [
-    { id: 'prod_901', title: 'Noise-Cancelling Wireless Earbuds', sku: 'EAR-BOM-01', price_inr: 2499, category: 'Audio' },
-    { id: 'prod_902', title: 'Ergonomic Mechanical Keyboard', sku: 'KEY-BLR-02', price_inr: 4999, category: 'Peripherals' },
-    { id: 'prod_903', title: 'Ultra-Fast GaN 65W Fast Charger', sku: 'CHG-DEL-03', price_inr: 1299, category: 'Accessories' },
-  ],
-};
-
-const SEED_STORAGE_FILES: StorageFile[] = [
-  { id: 'f1', name: 'user_avatars', type: 'folder', path: '/user_avatars', size: 524288000, itemsCount: 1420, modified: '2026-09-29T12:00:00Z' },
-  { id: 'f2', name: 'kyc_documents', type: 'folder', path: '/kyc_documents', size: 1610612736, itemsCount: 4800, modified: '2026-09-29T14:20:00Z' },
-  { id: 'f3', name: 'product_catalog_2026.pdf', type: 'file', path: '/product_catalog_2026.pdf', size: 4820000, mime: 'application/pdf', modified: '2026-09-28T09:15:00Z', publicUrl: 'https://storage.hind.io/production-assets/product_catalog_2026.pdf' },
-  { id: 'f4', name: 'hero_database_banner.png', type: 'file', path: '/hero_database_banner.png', size: 1250000, mime: 'image/png', modified: '2026-09-27T16:30:00Z', publicUrl: 'https://storage.hind.io/production-assets/hero_database_banner.png' },
-  { id: 'f5', name: 'gst_invoice_template.xlsx', type: 'file', path: '/gst_invoice_template.xlsx', size: 340000, mime: 'application/vnd.ms-excel', modified: '2026-09-26T11:00:00Z', publicUrl: 'https://storage.hind.io/production-assets/gst_invoice_template.xlsx' },
-];
-
-const SEED_FUNCTIONS: EdgeFunction[] = [
-  {
-    id: 'fn_razorpay',
-    name: 'razorpay-webhook-handler',
-    slug: 'razorpay-webhook',
-    runtime: 'TypeScript',
-    trigger_type: 'HTTP Webhook',
-    status: 'DEPLOYED',
-    invocations: 124800,
-    avg_latency_ms: 2.8,
-    created_at: '2026-09-20T10:00:00Z',
-    code: `import { serve } from '@hind/functions';
-import crypto from 'crypto';
-
-serve(async (req) => {
-  const signature = req.headers.get('x-razorpay-signature');
-  const body = await req.json();
-
-  // Validate Razorpay Webhook HMAC
-  const expectedSignature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_SECRET || 'secret')
-    .update(JSON.stringify(body))
-    .digest('hex');
-
-  if (signature === expectedSignature) {
-    // Atomically fulfill order in PostgreSQL with RLS
-    return new Response(JSON.stringify({ status: 'payment_processed', order_id: body.payload.payment.entity.order_id }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+// Helper to sanitize and load localStorage, purging legacy mock data
+function getCleanStorage<T>(key: string, fallback: T): T {
+  const raw = localStorage.getItem(key);
+  if (!raw) return fallback;
+  if (
+    raw.includes('db_sovereign_01') ||
+    raw.includes('production-ecommerce-cluster') ||
+    raw.includes('quick_commerce_orders') ||
+    raw.includes('aarav.sharma@hind.io') ||
+    raw.includes('fn_razorpay') ||
+    raw.includes('production-assets-sovereign')
+  ) {
+    localStorage.removeItem(key);
+    return fallback;
   }
-
-  return new Response('Invalid Signature', { status: 400 });
-});`,
-  },
-  {
-    id: 'fn_whatsapp',
-    name: 'whatsapp-order-notifier',
-    slug: 'whatsapp-notifier',
-    runtime: 'TypeScript',
-    trigger_type: 'Database Webhook',
-    status: 'DEPLOYED',
-    invocations: 85200,
-    avg_latency_ms: 3.4,
-    created_at: '2026-09-22T14:15:00Z',
-    code: `import { onDatabaseChange } from '@hind/functions';
-
-onDatabaseChange({ table: 'quick_commerce_orders', event: 'INSERT' }, async (event) => {
-  const { customer_name, amount_inr, city } = event.record;
-  console.log(\`Sending instant WhatsApp alert to \${customer_name} for ₹\${amount_inr} in \${city}\`);
-  return { delivered: true };
-});`,
-  },
-];
-
-const SEED_TEAM: TeamMember[] = [
-  { id: 'tm_1', name: 'Aarav Sharma', email: 'aarav.sharma@hind.io', role: 'admin', status: 'ACTIVE', joined_at: '2026-08-01', avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&auto=format&fit=crop&q=80' },
-  { id: 'tm_2', name: 'Priya Iyer', email: 'priya.iyer@hind.io', role: 'developer', status: 'ACTIVE', joined_at: '2026-08-15', avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80' },
-  { id: 'tm_3', name: 'Vikram Malhotra', email: 'vikram.m@hind.io', role: 'developer', status: 'ACTIVE', joined_at: '2026-09-01', avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80' },
-  { id: 'tm_4', name: 'Ananya Deshmukh', email: 'ananya.d@hind.io', role: 'viewer', status: 'INVITED', joined_at: '2026-09-25' },
-];
-
-const SEED_API_KEYS: ApiKeyItem[] = [
-  { id: 'key_1', name: 'Next.js Frontend Public Key', key: 'hind_anon_public_key_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', role: 'anon', created_at: '2026-09-15', last_used_at: 'Just now' },
-  { id: 'key_2', name: 'FastAPI Backend Service Role', key: 'hind_service_role_key_sec_9941a8b72c918273645019283746...', role: 'service_role', created_at: '2026-09-18', last_used_at: '2 mins ago' },
-];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
 
 export const dashboardApi = {
   // Databases
   getDatabases(): DatabaseItem[] {
-    const raw = localStorage.getItem('hind_databases');
-    return raw ? JSON.parse(raw) : SEED_DATABASES;
+    return getCleanStorage('hind_databases', SEED_DATABASES);
   },
 
   createDatabase(name: string, region: string, plan: 'Free' | 'Pro' | 'Enterprise'): DatabaseItem {
@@ -291,8 +148,7 @@ export const dashboardApi = {
 
   // Tables
   getTables(): TableItem[] {
-    const raw = localStorage.getItem('hind_tables');
-    return raw ? JSON.parse(raw) : SEED_TABLES;
+    return getCleanStorage('hind_tables', SEED_TABLES);
   },
 
   createTable(name: string, schema: ColumnDefinition[], rlsEnabled: boolean = true): TableItem {
@@ -312,9 +168,7 @@ export const dashboardApi = {
 
   // Rows & Data
   getTableRows(tableName: string): any[] {
-    const raw = localStorage.getItem(`hind_rows_${tableName}`);
-    if (raw) return JSON.parse(raw);
-    return SEED_ROWS[tableName] || [];
+    return getCleanStorage(`hind_rows_${tableName}`, SEED_ROWS[tableName] || []);
   },
 
   insertRow(tableName: string, rowData: any): any {
@@ -345,20 +199,12 @@ export const dashboardApi = {
   executeSql(queryStr: string): { columns: string[]; rows: any[]; latencyMs: number; count: number } {
     const latency = +(1.2 + Math.random() * 1.5).toFixed(2);
     const queryLower = queryStr.toLowerCase();
-
-    if (queryLower.includes('users')) {
-      const rows = this.getTableRows('users');
-      return {
-        columns: ['id', 'email', 'name', 'phone', 'city', 'created_at'],
-        rows,
-        latencyMs: latency,
-        count: rows.length,
-      };
-    }
-
-    const rows = this.getTableRows('quick_commerce_orders');
+    const match = queryLower.match(/from\s+([a-zA-Z0-9_]+)/);
+    const tableName = match ? match[1] : '';
+    const rows = tableName ? this.getTableRows(tableName) : [];
+    const columns = rows.length > 0 ? Object.keys(rows[0]) : ['id', 'created_at'];
     return {
-      columns: ['id', 'customer_name', 'amount_inr', 'payment_method', 'status', 'city', 'created_at'],
+      columns,
       rows,
       latencyMs: latency,
       count: rows.length,
@@ -367,8 +213,7 @@ export const dashboardApi = {
 
   // Storage
   getStorageFiles(): StorageFile[] {
-    const raw = localStorage.getItem('hind_storage_files');
-    return raw ? JSON.parse(raw) : SEED_STORAGE_FILES;
+    return getCleanStorage('hind_storage_files', SEED_STORAGE_FILES);
   },
 
   uploadFile(file: { name: string; size: number; mime?: string }): StorageFile {
@@ -393,10 +238,105 @@ export const dashboardApi = {
     localStorage.setItem('hind_storage_files', JSON.stringify(files));
   },
 
-  // Functions
+  // Functions (Real Authenticated API)
+  async getEdgeFunctions(databaseId: string): Promise<EdgeFunction[]> {
+    try {
+      const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/functions`);
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || json.message || 'Failed to fetch functions');
+      }
+      return json.data || [];
+    } catch (err: any) {
+      console.warn('[dashboardApi.getEdgeFunctions fallback to local]:', err.message);
+      return this.getFunctions();
+    }
+  },
+
+  async createEdgeFunction(
+    databaseId: string, 
+    payload: { name: string; code?: string; trigger_type?: string }
+  ): Promise<EdgeFunction> {
+    const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/functions`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      const err: any = new Error(json.details || json.error || json.message || 'Failed to create function');
+      err.details = json.details;
+      throw err;
+    }
+    return json.data;
+  },
+
+  async deployEdgeFunction(
+    databaseId: string, 
+    fnId: string, 
+    payload: { code: string; name?: string; trigger_type?: string }
+  ): Promise<EdgeFunction> {
+    const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/functions/${encodeURIComponent(fnId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      const err: any = new Error(json.details || json.error || json.message || 'Failed to deploy function');
+      err.details = json.details;
+      throw err;
+    }
+    return json.data;
+  },
+
+  async deleteEdgeFunction(databaseId: string, fnId: string): Promise<void> {
+    const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/functions/${encodeURIComponent(fnId)}`, {
+      method: 'DELETE',
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || json.message || 'Failed to delete function');
+    }
+  },
+
+  async invokeEdgeFunction(
+    databaseId: string, 
+    fnId: string, 
+    payload: { method?: string; body?: any; headers?: any } = {}
+  ): Promise<{
+    status: number;
+    data: any;
+    consoleLogs: string[];
+    durationMs: number;
+    timestamp: string;
+  }> {
+    const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/functions/${encodeURIComponent(fnId)}/invoke`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || json.message || 'Failed to invoke function');
+    }
+    return json;
+  },
+
+  async getEdgeFunctionLogs(databaseId: string, fnId: string): Promise<string[]> {
+    try {
+      const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/functions/${encodeURIComponent(fnId)}/logs`);
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || json.message || 'Failed to fetch function logs');
+      }
+      return json.data || [];
+    } catch (err: any) {
+      console.warn('[dashboardApi.getEdgeFunctionLogs fallback]:', err.message);
+      return [];
+    }
+  },
+
+  // Functions (Legacy LocalStorage Fallbacks)
   getFunctions(): EdgeFunction[] {
-    const raw = localStorage.getItem('hind_functions');
-    return raw ? JSON.parse(raw) : SEED_FUNCTIONS;
+    return getCleanStorage('hind_functions', SEED_FUNCTIONS);
   },
 
   createFunction(name: string, code: string, triggerType: string): EdgeFunction {
@@ -424,10 +364,90 @@ export const dashboardApi = {
     localStorage.setItem('hind_functions', JSON.stringify(updated));
   },
 
-  // Team
+  // Active Database ID
+  getActiveDbId(): string | null {
+    return localStorage.getItem('hind_active_db_id') || sessionStorage.getItem('hind_active_db_id') || null;
+  },
+
+  setActiveDbId(id: string): void {
+    localStorage.setItem('hind_active_db_id', id);
+    sessionStorage.setItem('hind_active_db_id', id);
+  },
+
+  // Team (Real Authenticated API)
+  async getTeam(databaseId: string): Promise<TeamMember[]> {
+    try {
+      const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/team`);
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || json.message || 'Failed to fetch team members');
+      }
+      return json.data || [];
+    } catch (err: any) {
+      console.warn('[dashboardApi.getTeam fallback to local]:', err.message);
+      return this.getTeamMembers();
+    }
+  },
+
+  async inviteTeamMember(
+    databaseId: string, 
+    payload: { name: string; email: string; role: 'admin' | 'developer' | 'viewer' }
+  ): Promise<{ member: TeamMember; devInviteLink?: string }> {
+    const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/team/invites`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || json.message || 'Failed to send invitation');
+    }
+    return {
+      member: json.data,
+      devInviteLink: json.devInviteLink,
+    };
+  },
+
+  async updateTeamMemberRole(
+    databaseId: string, 
+    memberId: string, 
+    role: 'admin' | 'developer' | 'viewer'
+  ): Promise<TeamMember> {
+    const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/team/${encodeURIComponent(memberId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || json.message || 'Failed to update member role');
+    }
+    return json.data;
+  },
+
+  async deleteTeamMember(databaseId: string, memberId: string): Promise<void> {
+    const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/team/${encodeURIComponent(memberId)}`, {
+      method: 'DELETE',
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || json.message || 'Failed to remove member');
+    }
+  },
+
+  async acceptInvite(token: string): Promise<{ success: boolean; databaseId: string; databaseName?: string; role?: string }> {
+    const res = await apiFetch('/api/v1/databases/invites/accept', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.message || json.error || 'Failed to accept invitation');
+    }
+    return json;
+  },
+
+  // Team (Legacy LocalStorage Fallbacks)
   getTeamMembers(): TeamMember[] {
-    const raw = localStorage.getItem('hind_team');
-    return raw ? JSON.parse(raw) : SEED_TEAM;
+    return getCleanStorage('hind_team', SEED_TEAM);
   },
 
   inviteMember(name: string, email: string, role: 'admin' | 'developer' | 'viewer'): TeamMember {
@@ -455,18 +475,62 @@ export const dashboardApi = {
     localStorage.setItem('hind_team', JSON.stringify(team));
   },
 
-  // API Keys
+  // API Keys (Real Authenticated API)
+  async getProjectApiKeys(databaseId: string): Promise<ApiKeyItem[]> {
+    try {
+      const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/api-keys`);
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || json.message || 'Failed to fetch API keys');
+      }
+      return json.data || [];
+    } catch (err: any) {
+      console.warn('[dashboardApi.getProjectApiKeys fallback to local]:', err.message);
+      return this.getApiKeys();
+    }
+  },
+
+  async createProjectApiKey(
+    databaseId: string,
+    payload: { name: string; role: 'anon' | 'service_role' | 'admin' | 'developer' }
+  ): Promise<{ keyItem: ApiKeyItem; fullKey: string }> {
+    const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/api-keys`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || json.message || 'Failed to generate API key');
+    }
+    return {
+      keyItem: json.data,
+      fullKey: json.data.key,
+    };
+  },
+
+  async revokeProjectApiKey(databaseId: string, keyId: string): Promise<void> {
+    const res = await apiFetch(`/api/v1/databases/${encodeURIComponent(databaseId)}/api-keys/${encodeURIComponent(keyId)}`, {
+      method: 'DELETE',
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || json.message || 'Failed to revoke API key');
+    }
+  },
+
+  // API Keys (Legacy LocalStorage Fallbacks)
   getApiKeys(): ApiKeyItem[] {
-    const raw = localStorage.getItem('hind_api_keys');
-    return raw ? JSON.parse(raw) : SEED_API_KEYS;
+    return getCleanStorage('hind_api_keys', SEED_API_KEYS);
   },
 
   createApiKey(name: string, role: 'anon' | 'service_role'): ApiKeyItem {
     const keys = this.getApiKeys();
+    const generatedKey = `hk_live_${Math.random().toString(36).substring(2, 18)}${Math.random().toString(36).substring(2, 18)}`;
     const newKey: ApiKeyItem = {
       id: `key_${Date.now()}`,
       name,
-      key: `hind_${role}_key_${Math.random().toString(36).substring(2, 15)}_${Math.random().toString(36).substring(2, 15)}`,
+      key: generatedKey,
+      key_prefix: `${generatedKey.substring(0, 16)}...`,
       role,
       created_at: new Date().toISOString().substring(0, 10),
       last_used_at: 'Never',

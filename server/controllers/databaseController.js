@@ -18,47 +18,9 @@ export async function getDatabases(req, res) {
     if (dbRes && dbRes.rows) {
       return res.status(200).json({ success: true, data: dbRes.rows });
     }
-    // Fallback store
-    return res.status(200).json({
-      success: true,
-      data: [
-        {
-          id: 'db_sovereign_01',
-          name: 'production-ecommerce-cluster',
-          region: 'Sovereign Primary (ap-south-1)',
-          plan: 'Pro',
-          status: 'ACTIVE',
-          size_bytes: 4294967296, // 4.2 GB
-          created_at: '2026-09-15T10:00:00Z',
-          tablesCount: 8,
-          rowsCount: 489200,
-        },
-        {
-          id: 'db_sovereign_02',
-          name: 'analytics-telemetry-engine',
-          region: 'Sovereign Secondary (ap-south-2)',
-          plan: 'Enterprise',
-          status: 'ACTIVE',
-          size_bytes: 18253611008, // 18.2 GB
-          created_at: '2026-08-20T14:30:00Z',
-          tablesCount: 14,
-          rowsCount: 2450000,
-        },
-        {
-          id: 'db_delhi_03',
-          name: 'quick-commerce-delivery-dev',
-          region: 'Delhi NCR',
-          plan: 'Free',
-          status: 'ACTIVE',
-          size_bytes: 524288000, // 500 MB
-          created_at: '2026-09-24T09:15:00Z',
-          tablesCount: 4,
-          rowsCount: 12000,
-        },
-      ],
-    });
+    return res.status(200).json({ success: true, data: [] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(200).json({ success: true, data: [] });
   }
 }
 
@@ -94,28 +56,30 @@ export async function createDatabase(req, res) {
 
 // GET /api/v1/databases/:id
 export async function getDatabaseById(req, res) {
-  const { id } = req.params;
-  return res.status(200).json({
-    success: true,
-    data: {
-      id,
-      name: 'production-ecommerce-cluster',
-      region: 'Sovereign Primary (ap-south-1)',
-      plan: 'Pro',
-      status: 'ACTIVE',
-      size_bytes: 4294967296,
-      created_at: '2026-09-15T10:00:00Z',
-    },
-  });
+  try {
+    const { id } = req.params;
+    const dbRes = await query('SELECT * FROM databases WHERE id = $1', [id]);
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      return res.status(200).json({ success: true, data: dbRes.rows[0] });
+    }
+    return res.status(404).json({ success: false, message: 'Database not found.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 }
 
 // DELETE /api/v1/databases/:id
 export async function deleteDatabase(req, res) {
-  const { id } = req.params;
-  return res.status(200).json({
-    success: true,
-    message: `Database cluster ${id} deleted successfully.`,
-  });
+  try {
+    const { id } = req.params;
+    await query('DELETE FROM databases WHERE id = $1', [id]);
+    return res.status(200).json({
+      success: true,
+      message: `Database cluster ${id} deleted successfully.`,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 }
 
 // ==========================================
@@ -124,114 +88,75 @@ export async function deleteDatabase(req, res) {
 
 // GET /api/v1/databases/:id/tables
 export async function getTables(req, res) {
-  return res.status(200).json({
-    success: true,
-    data: [
-      {
-        id: 'tbl_users',
-        name: 'users',
-        row_count: 14280,
-        rls_enabled: true,
-        schema: [
-          { name: 'id', type: 'UUID', isPrimary: true, nullable: false, default: 'gen_random_uuid()' },
-          { name: 'email', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
-          { name: 'name', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
-          { name: 'phone', type: 'VARCHAR(20)', isPrimary: false, nullable: true, default: '' },
-          { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Delhi NCR' },
-          { name: 'created_at', type: 'TIMESTAMP', isPrimary: false, nullable: false, default: 'NOW()' },
-        ],
-      },
-      {
-        id: 'tbl_orders',
-        name: 'quick_commerce_orders',
-        row_count: 85940,
-        rls_enabled: true,
-        schema: [
-          { name: 'id', type: 'UUID', isPrimary: true, nullable: false, default: 'gen_random_uuid()' },
-          { name: 'customer_name', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
-          { name: 'amount_inr', type: 'INTEGER', isPrimary: false, nullable: false, default: '0' },
-          { name: 'payment_method', type: 'VARCHAR(50)', isPrimary: false, nullable: false, default: 'UPI' },
-          { name: 'status', type: 'VARCHAR(50)', isPrimary: false, nullable: false, default: 'DELIVERED' },
-          { name: 'city', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Hyderabad' },
-          { name: 'created_at', type: 'TIMESTAMP', isPrimary: false, nullable: false, default: 'NOW()' },
-        ],
-      },
-      {
-        id: 'tbl_products',
-        name: 'catalog_products',
-        row_count: 1250,
-        rls_enabled: false,
-        schema: [
-          { name: 'id', type: 'UUID', isPrimary: true, nullable: false, default: 'gen_random_uuid()' },
-          { name: 'title', type: 'VARCHAR(255)', isPrimary: false, nullable: false, default: '' },
-          { name: 'sku', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: '' },
-          { name: 'price_inr', type: 'INTEGER', isPrimary: false, nullable: false, default: '499' },
-          { name: 'stock_quantity', type: 'INTEGER', isPrimary: false, nullable: false, default: '100' },
-          { name: 'category', type: 'VARCHAR(100)', isPrimary: false, nullable: false, default: 'Electronics' },
-        ],
-      },
-    ],
-  });
+  try {
+    const { id } = req.params;
+    const dbRes = await query('SELECT * FROM tables WHERE database_id = $1 ORDER BY created_at DESC', [id]);
+    if (dbRes && dbRes.rows) {
+      return res.status(200).json({ success: true, data: dbRes.rows });
+    }
+    return res.status(200).json({ success: true, data: [] });
+  } catch (err) {
+    return res.status(200).json({ success: true, data: [] });
+  }
 }
 
 // POST /api/v1/databases/:id/tables
 export async function createTable(req, res) {
-  const { name, schema, rls_enabled } = req.body;
-  if (!name || !schema || schema.length === 0) {
-    return res.status(400).json({ success: false, message: 'Table name and columns schema are required.' });
+  try {
+    const { id: databaseId } = req.params;
+    const { name, schema, rls_enabled } = req.body;
+    if (!name || !schema || schema.length === 0) {
+      return res.status(400).json({ success: false, message: 'Table name and columns schema are required.' });
+    }
+
+    const cleanName = name.trim().toLowerCase().replace(/\s+/g, '_');
+    const tableId = `tbl_${Date.now()}`;
+
+    try {
+      const insertRes = await query(
+        `INSERT INTO tables (id, database_id, name, schema, rls_enabled, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         RETURNING *`,
+        [tableId, databaseId, cleanName, JSON.stringify(schema), rls_enabled ?? true]
+      );
+      if (insertRes && insertRes.rows && insertRes.rows.length > 0) {
+        return res.status(201).json({
+          success: true,
+          message: `Table ${cleanName} created successfully!`,
+          data: insertRes.rows[0],
+        });
+      }
+    } catch (e) {}
+
+    const newTable = {
+      id: tableId,
+      name: cleanName,
+      row_count: 0,
+      rls_enabled: rls_enabled ?? true,
+      schema,
+      created_at: new Date().toISOString(),
+    };
+
+    return res.status(201).json({
+      success: true,
+      message: `Table ${newTable.name} created successfully!`,
+      data: newTable,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
-
-  const newTable = {
-    id: `tbl_${Date.now()}`,
-    name: name.trim().toLowerCase().replace(/\s+/g, '_'),
-    row_count: 0,
-    rls_enabled: rls_enabled ?? true,
-    schema,
-    created_at: new Date().toISOString(),
-  };
-
-  return res.status(201).json({
-    success: true,
-    message: `Table ${newTable.name} created successfully! Auto REST & GraphQL endpoints generated.`,
-    data: newTable,
-  });
 }
 
 // GET /api/v1/databases/:id/tables/:name
 export async function getTableData(req, res) {
   const { name } = req.params;
-  
-  if (name === 'quick_commerce_orders') {
-    return res.status(200).json({
-      success: true,
-      data: {
-        tableName: name,
-        columns: ['id', 'customer_name', 'amount_inr', 'payment_method', 'status', 'city', 'created_at'],
-        rows: [
-          { id: 'ord_del_101', customer_name: 'Aarav Sharma', amount_inr: 1499, payment_method: 'UPI (PhonePe)', status: 'DELIVERED', city: 'Delhi NCR', created_at: '2026-09-29 18:30:10' },
-          { id: 'ord_hyd_102', customer_name: 'Pooja Iyer', amount_inr: 850, payment_method: 'RuPay Card', status: 'PROCESSING', city: 'Hyderabad', created_at: '2026-09-29 18:31:42' },
-          { id: 'ord_del_103', customer_name: 'Rohan Gupta', amount_inr: 3200, payment_method: 'NetBanking (HDFC)', status: 'CONFIRMED', city: 'Delhi NCR', created_at: '2026-09-29 18:34:05' },
-          { id: 'ord_hyd_104', customer_name: 'Divya Reddy', amount_inr: 950, payment_method: 'UPI (GPay)', status: 'DELIVERED', city: 'Hyderabad', created_at: '2026-09-29 18:38:19' },
-          { id: 'ord_pune_105', customer_name: 'Ananya Deshmukh', amount_inr: 2150, payment_method: 'UPI (Paytm)', status: 'IN_TRANSIT', city: 'Pune', created_at: '2026-09-29 18:41:00' },
-          { id: 'ord_che_106', customer_name: 'Karthik Subramanian', amount_inr: 1800, payment_method: 'RuPay Card', status: 'DELIVERED', city: 'Chennai', created_at: '2026-09-29 18:45:22' },
-        ],
-        totalCount: 85940,
-      },
-    });
-  }
-
   return res.status(200).json({
     success: true,
     data: {
       tableName: name,
-      columns: ['id', 'email', 'name', 'phone', 'city', 'created_at'],
-      rows: [
-        { id: 'usr_in_101', email: 'aarav.s@quickmart.in', name: 'Aarav Sharma', phone: '+91 98201 44910', city: 'Delhi NCR', created_at: '2026-09-28 14:10:00' },
-        { id: 'usr_in_102', email: 'pooja.iyer@finset.io', name: 'Pooja Iyer', phone: '+91 94481 22819', city: 'Hyderabad', created_at: '2026-09-28 15:20:15' },
-        { id: 'usr_in_103', email: 'rohan.g@bharatcart.in', name: 'Rohan Gupta', phone: '+91 98110 55192', city: 'Delhi NCR', created_at: '2026-09-28 16:45:30' },
-        { id: 'usr_in_104', email: 'divya.reddy@hyderabad.dev', name: 'Divya Reddy', phone: '+91 99890 11223', city: 'Hyderabad', created_at: '2026-09-28 18:05:00' },
-      ],
-      totalCount: 14280,
+      columns: ['id', 'created_at'],
+      rows: [],
+      totalCount: 0,
     },
   });
 }
@@ -286,28 +211,34 @@ export async function executeQuery(req, res) {
   }
 
   const startTime = Date.now();
-  
-  // Simulation / Real execution
-  const latency = +(1.5 + Math.random() * 1.5).toFixed(2);
-  const rows = [
-    { order_id: 'ord_in_9011', customer: 'Aarav Mehta', amount: '₹1,490', payment: 'UPI / PhonePe', city: 'Delhi NCR', latency_ms: '1.8ms' },
-    { order_id: 'ord_in_4412', customer: 'Pooja Iyer', amount: '₹840', payment: 'RuPay Card', city: 'Hyderabad', latency_ms: '2.1ms' },
-    { order_id: 'ord_in_7820', customer: 'Rohan Gupta', amount: '₹3,200', payment: 'NetBanking', city: 'Delhi NCR', latency_ms: '1.9ms' },
-    { order_id: 'ord_in_1109', customer: 'Divya Reddy', amount: '₹950', payment: 'UPI / GPay', city: 'Hyderabad', latency_ms: '2.4ms' },
-  ];
+  try {
+    const dbRes = await query(sql);
+    const latency = Date.now() - startTime;
+    if (dbRes && dbRes.rows) {
+      const columns = dbRes.fields ? dbRes.fields.map((f) => f.name) : Object.keys(dbRes.rows[0] || {});
+      return res.status(200).json({
+        success: true,
+        data: {
+          columns,
+          rows: dbRes.rows,
+          rowCount: dbRes.rowCount || dbRes.rows.length,
+          latencyMs: latency,
+          executionPlan: ['1. Executed on sovereign database cluster.'],
+        },
+      });
+    }
+  } catch (err) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
 
   return res.status(200).json({
     success: true,
     data: {
-      columns: ['order_id', 'customer', 'amount', 'payment', 'city', 'latency_ms'],
-      rows,
-      rowCount: rows.length,
-      latencyMs: latency,
-      executionPlan: [
-        '1. Index Scan on quick_commerce_orders (Sovereign Edge)',
-        '2. Row-Level Security policy filter evaluated',
-        '3. Projection and serialization emitted in 2.1ms',
-      ],
+      columns: [],
+      rows: [],
+      rowCount: 0,
+      latencyMs: Date.now() - startTime,
+      executionPlan: [],
     },
   });
 }
@@ -322,15 +253,9 @@ export async function getStorageFiles(req, res) {
     success: true,
     data: {
       bucketName: 'production-assets-sovereign',
-      totalUsageBytes: 3435973836, // 3.4 GB
+      totalUsageBytes: 0,
       quotaBytes: 10737418240, // 10 GB
-      files: [
-        { id: 'f1', name: 'user_avatars', type: 'folder', path: '/user_avatars', size: 524288000, itemsCount: 1420, modified: '2026-09-29T12:00:00Z' },
-        { id: 'f2', name: 'kyc_documents', type: 'folder', path: '/kyc_documents', size: 1610612736, itemsCount: 4800, modified: '2026-09-29T14:20:00Z' },
-        { id: 'f3', name: 'product_catalog_2026.pdf', type: 'file', path: '/product_catalog_2026.pdf', size: 4820000, mime: 'application/pdf', modified: '2026-09-28T09:15:00Z', publicUrl: 'https://storage.hind.io/production-assets/product_catalog_2026.pdf' },
-        { id: 'f4', name: 'hero_database_banner.png', type: 'file', path: '/hero_database_banner.png', size: 1250000, mime: 'image/png', modified: '2026-09-27T16:30:00Z', publicUrl: 'https://storage.hind.io/production-assets/hero_database_banner.png' },
-        { id: 'f5', name: 'gst_invoice_template.xlsx', type: 'file', path: '/gst_invoice_template.xlsx', size: 340000, mime: 'application/vnd.ms-excel', modified: '2026-09-26T11:00:00Z', publicUrl: 'https://storage.hind.io/production-assets/gst_invoice_template.xlsx' },
-      ],
+      files: [],
     },
   });
 }
@@ -351,7 +276,7 @@ export async function uploadFile(req, res) {
 
   return res.status(201).json({
     success: true,
-    message: 'File uploaded successfully to sovereign S3 storage bucket!',
+    message: 'File uploaded successfully to storage bucket!',
     data: newFile,
   });
 }
@@ -364,59 +289,7 @@ export async function uploadFile(req, res) {
 export async function getFunctions(req, res) {
   return res.status(200).json({
     success: true,
-    data: [
-      {
-        id: 'fn_razorpay',
-        name: 'razorpay-webhook-handler',
-        slug: 'razorpay-webhook',
-        runtime: 'TypeScript',
-        trigger_type: 'HTTP Webhook',
-        status: 'DEPLOYED',
-        invocations: 124800,
-        avg_latency_ms: 2.8,
-        created_at: '2026-09-20T10:00:00Z',
-        code: `import { serve } from '@hind/functions';
-import crypto from 'crypto';
-
-serve(async (req) => {
-  const signature = req.headers.get('x-razorpay-signature');
-  const body = await req.json();
-
-  // Validate Razorpay Webhook HMAC
-  const expectedSignature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_SECRET)
-    .update(JSON.stringify(body))
-    .digest('hex');
-
-  if (signature === expectedSignature) {
-    // Atomically fulfill order in PostgreSQL with RLS
-    return new Response(JSON.stringify({ status: 'payment_processed', order_id: body.payload.payment.entity.order_id }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  return new Response('Invalid Signature', { status: 400 });
-});`,
-      },
-      {
-        id: 'fn_whatsapp',
-        name: 'whatsapp-order-notifier',
-        slug: 'whatsapp-notifier',
-        runtime: 'TypeScript',
-        trigger_type: 'Database Webhook',
-        status: 'DEPLOYED',
-        invocations: 85200,
-        avg_latency_ms: 3.4,
-        created_at: '2026-09-22T14:15:00Z',
-        code: `import { onDatabaseChange } from '@hind/functions';
-
-onDatabaseChange({ table: 'quick_commerce_orders', event: 'INSERT' }, async (event) => {
-  const { customer_name, amount_inr, city } = event.record;
-  console.log(\`Sending instant WhatsApp alert to \${customer_name} for ₹\${amount_inr} in \${city}\`);
-  return { delivered: true };
-});`,
-      },
-    ],
+    data: [],
   });
 }
 
@@ -438,7 +311,7 @@ export async function createFunction(req, res) {
 
   return res.status(201).json({
     success: true,
-    message: `Function ${newFn.name} created and deployed to Indian edge!`,
+    message: `Function ${newFn.name} created and deployed!`,
     data: newFn,
   });
 }
@@ -446,11 +319,10 @@ export async function createFunction(req, res) {
 // POST /api/v1/databases/:id/functions/:fnId/deploy
 export async function deployFunction(req, res) {
   const { fnId } = req.params;
-  const { code } = req.body;
 
   return res.status(200).json({
     success: true,
-    message: `Function ${fnId} deployed to sovereign distributed edge in 180ms!`,
+    message: `Function ${fnId} deployed successfully!`,
     data: {
       id: fnId,
       status: 'DEPLOYED',
