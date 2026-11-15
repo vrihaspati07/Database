@@ -19,6 +19,10 @@ export const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
+pool.on('error', (err) => {
+  console.error('[Hind DB Postgres db/index.js Error]: Unexpected error on idle client', err.message);
+});
+
 // Resilient in-memory store for development/preview when live Postgres server is not attached
 class MockStore {
   constructor() {

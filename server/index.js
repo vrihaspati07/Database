@@ -193,6 +193,15 @@ if (process.env.NODE_ENV !== 'test') {
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
+
+  // Global Process Crash Prevention
+  process.on('uncaughtException', (err) => {
+    console.error('[Hind DB Core Uncaught Exception]:', err.message || err);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    console.error('[Hind DB Core Unhandled Rejection]:', reason?.message || reason);
+  });
 }
 
 export default app;

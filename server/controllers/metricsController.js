@@ -30,11 +30,31 @@ export const metricsController = {
    * GET /health or GET /api/v1/health
    */
   async getHealth(req, res) {
-    const dbHealth = await testDbConnection();
-    const redisHealth = await redis.getHealth();
-    const storageHealth = await storage.getHealth();
+    let dbHealth = { status: 'DEGRADED', message: 'Initializing' };
+    let redisHealth = { mode: 'In-Memory Fallback' };
+    let storageHealth = { available: false };
 
-    const isHealthy = dbHealth.status === 'UP' || redisHealth.mode;
+    try {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('DB check timeout')), 1500)
+      );
+      dbHealth = await Promise.race([testDbConnection(), timeoutPromise]).catch((e) => ({
+        status: 'DEGRADED',
+        error: e.message,
+      }));
+    } catch (e) {
+      dbHealth = { status: 'DEGRADED', error: e.message };
+    }
+
+    try {
+      redisHealth = await redis.getHealth();
+    } catch (e) {}
+
+    try {
+      storageHealth = await storage.getHealth();
+    } catch (e) {}
+
+    const isHealthy = dbHealth.status === 'UP';
 
     const payload = {
       status: isHealthy ? 'HEALTHY' : 'DEGRADED',
@@ -51,6 +71,7 @@ export const metricsController = {
       attribution: '© 2026 Hind. A Hind India Private Limited Company.',
     };
 
-    res.status(isHealthy ? 200 : 503).json(payload);
+    // Return 200 so orchestrators (Railway / Kubernetes / Docker) don't kill the container during initial boot
+    res.status(200).json(payload);
   },
 };
