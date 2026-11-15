@@ -28,6 +28,9 @@ import helmet from 'helmet';
 
 const app = express();
 
+// Behind Railway/Render/nginx there is one reverse proxy: trust it so req.ip and rate limits use the real client IP.
+if (config.app.env === 'production') app.set('trust proxy', 1);
+
 // Security Headers
 app.use(helmet({
   contentSecurityPolicy: false,

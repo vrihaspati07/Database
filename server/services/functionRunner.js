@@ -10,13 +10,13 @@
  * must run in a container with an egress policy.
  */
 
-import ts from 'typescript';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
 
 let esbuildModule = null;
+let tsModule = null;
 
 // Attempt dynamic loading of esbuild if present
 async function getEsbuild() {
@@ -27,6 +27,18 @@ async function getEsbuild() {
     esbuildModule = false;
   }
   return esbuildModule;
+}
+
+// Attempt dynamic loading of typescript if present (devDependency)
+async function getTypescript() {
+  if (tsModule !== null) return tsModule;
+  try {
+    const mod = await import('typescript');
+    tsModule = mod.default || mod;
+  } catch (e) {
+    tsModule = false;
+  }
+  return tsModule;
 }
 
 export const functionRunner = {
@@ -59,34 +71,40 @@ export const functionRunner = {
       }
     }
 
-    // Strategy B: TypeScript Transpiler with diagnostics validation
-    const result = ts.transpileModule(code, {
-      reportDiagnostics: true,
-      compilerOptions: {
-        target: ts.ScriptTarget.ES2022,
-        module: ts.ModuleKind.ESNext,
-        removeComments: false,
-        strict: false,
-      },
-    });
-
-    if (result.diagnostics && result.diagnostics.length > 0) {
-      const errorMessages = result.diagnostics.map((diag) => {
-        const message = ts.flattenDiagnosticMessageText(diag.messageText, '\n');
-        if (diag.file && diag.start !== undefined) {
-          const { line, character } = diag.file.getLineAndCharacterOfPosition(diag.start);
-          return `Line ${line + 1}, Col ${character + 1}: ${message}`;
-        }
-        return message;
+    // Strategy B: TypeScript Transpiler with diagnostics validation (if installed)
+    const ts = await getTypescript();
+    if (ts) {
+      const result = ts.transpileModule(code, {
+        reportDiagnostics: true,
+        compilerOptions: {
+          target: ts.ScriptTarget.ES2022,
+          module: ts.ModuleKind.ESNext,
+          removeComments: false,
+          strict: false,
+        },
       });
 
-      const compileErr = new Error(`Compilation Error: ${errorMessages.join('; ')}`);
-      compileErr.name = 'CompileError';
-      compileErr.details = errorMessages.join('\n');
-      throw compileErr;
+      if (result.diagnostics && result.diagnostics.length > 0) {
+        const errorMessages = result.diagnostics.map((diag) => {
+          const message = ts.flattenDiagnosticMessageText(diag.messageText, '\n');
+          if (diag.file && diag.start !== undefined) {
+            const { line, character } = diag.file.getLineAndCharacterOfPosition(diag.start);
+            return `Line ${line + 1}, Col ${character + 1}: ${message}`;
+          }
+          return message;
+        });
+
+        const compileErr = new Error(`Compilation Error: ${errorMessages.join('; ')}`);
+        compileErr.name = 'CompileError';
+        compileErr.details = errorMessages.join('\n');
+        throw compileErr;
+      }
+
+      return result.outputText;
     }
 
-    return result.outputText;
+    // Fallback: If neither esbuild nor typescript is installed, return code directly
+    return code;
   },
 
   /**
